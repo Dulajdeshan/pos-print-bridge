@@ -1,7 +1,7 @@
 const { exec } = require("child_process");
 const util = require("util");
 const execPromise = util.promisify(exec);
-import { PosPrinter, PosPrintOptions } from "electron-pos-printer";
+import { BrowserWindow } from "electron";
 
 export interface Printer {
   id: string;
@@ -35,7 +35,6 @@ export async function getPrinters(): Promise<Printer[]> {
     if (process.platform === "win32") {
       return await getWindowsPrinters();
     } else {
-      // For Linux/Mac, can use different methods
       return [];
     }
   } catch (error) {
@@ -86,188 +85,302 @@ function detectPrinterTypeName(printerName: string): string {
   if (nameLower.includes("tanca")) return "TANCA";
   if (nameLower.includes("daruma")) return "DARUMA";
   if (nameLower.includes("bematech")) return "BEMATECH";
-  if (nameLower.includes("xprint") || nameLower.includes("xp-"))
-    return "XPrint";
+  if (
+    nameLower.includes("xprint") ||
+    nameLower.includes("xp-") ||
+    nameLower.includes("pos-")
+  )
+    return "Thermal";
 
   return "Thermal";
+}
+
+function generateReceiptHTML(receiptData: ReceiptData): string {
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <style>
+        @page {
+          size: 80mm auto;
+          margin: 0;
+        }
+        
+        * {
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
+        }
+        
+        body {
+          width: 80mm;
+          font-family: 'Courier New', Courier, monospace;
+          font-size: 12px;
+          padding: 10px;
+        }
+        
+        .center {
+          text-align: center;
+        }
+        
+        .bold {
+          font-weight: bold;
+        }
+        
+        .large {
+          font-size: 16px;
+        }
+        
+        .divider {
+          border-top: 1px dashed #000;
+          margin: 10px 0;
+        }
+        
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          margin: 10px 0;
+        }
+        
+        table td {
+          padding: 3px 0;
+        }
+        
+        .item-name {
+          width: 50%;
+        }
+        
+        .item-qty {
+          width: 15%;
+          text-align: center;
+        }
+        
+        .item-price {
+          width: 17.5%;
+          text-align: right;
+        }
+        
+        .item-total {
+          width: 17.5%;
+          text-align: right;
+        }
+        
+        .total-row td:first-child {
+          text-align: left;
+        }
+        
+        .total-row td:last-child {
+          text-align: right;
+        }
+        
+        .spacer {
+          height: 20px;
+        }
+      </style>
+    </head>
+    <body>
+      ${
+        receiptData.storeName
+          ? `<div class="center bold large">${receiptData.storeName}</div>`
+          : ""
+      }
+      ${
+        receiptData.storeAddress
+          ? `<div class="center">${receiptData.storeAddress}</div>`
+          : ""
+      }
+      ${
+        receiptData.storePhone
+          ? `<div class="center">${receiptData.storePhone}</div>`
+          : ""
+      }
+      
+      <div class="divider"></div>
+      
+      ${
+        receiptData.receiptNumber
+          ? `<div>Receipt #: ${receiptData.receiptNumber}</div>`
+          : ""
+      }
+      ${receiptData.date ? `<div>Date: ${receiptData.date}</div>` : ""}
+      
+      <div class="divider"></div>
+      
+      ${
+        receiptData.items && receiptData.items.length > 0
+          ? `
+        <table>
+          <thead>
+            <tr class="bold">
+              <td class="item-name">Item</td>
+              <td class="item-qty">Qty</td>
+              <td class="item-price">Price</td>
+              <td class="item-total">Total</td>
+            </tr>
+          </thead>
+          <tbody>
+            ${receiptData.items
+              .map(
+                (item) => `
+              <tr>
+                <td class="item-name">${item.name}</td>
+                <td class="item-qty">${item.quantity}</td>
+                <td class="item-price">$${item.price.toFixed(2)}</td>
+                <td class="item-total">$${item.total.toFixed(2)}</td>
+              </tr>
+            `
+              )
+              .join("")}
+          </tbody>
+        </table>
+        
+        <div class="divider"></div>
+      `
+          : ""
+      }
+      
+      <table>
+        ${
+          receiptData.subtotal !== undefined
+            ? `
+          <tr class="total-row">
+            <td>Subtotal:</td>
+            <td>$${receiptData.subtotal.toFixed(2)}</td>
+          </tr>
+        `
+            : ""
+        }
+        ${
+          receiptData.tax !== undefined
+            ? `
+          <tr class="total-row">
+            <td>Tax:</td>
+            <td>$${receiptData.tax.toFixed(2)}</td>
+          </tr>
+        `
+            : ""
+        }
+        ${
+          receiptData.total !== undefined
+            ? `
+          <tr class="total-row bold large">
+            <td>TOTAL:</td>
+            <td>$${receiptData.total.toFixed(2)}</td>
+          </tr>
+        `
+            : ""
+        }
+      </table>
+      
+      ${
+        receiptData.paymentMethod
+          ? `<div style="margin-top: 10px;">Payment: ${receiptData.paymentMethod}</div>`
+          : ""
+      }
+      
+      <div class="divider"></div>
+      
+      ${
+        receiptData.footer
+          ? `<div class="center">${receiptData.footer}</div>`
+          : ""
+      }
+      <div class="center">Thank you for your business!</div>
+      
+      <div class="spacer"></div>
+    </body>
+    </html>
+  `;
 }
 
 export async function printReceipt(
   printerId: string,
   receiptData: ReceiptData
 ): Promise<void> {
-  try {
-    console.log(`Printing to: ${printerId}`);
+  return new Promise((resolve, reject) => {
+    try {
+      console.log(`Printing to: ${printerId}`);
 
-    // Build receipt data for electron-pos-printer
-    const data: any[] = [];
-
-    // Store header
-    if (receiptData.storeName) {
-      data.push({
-        type: "text",
-        value: receiptData.storeName,
-        style: {
-          fontWeight: "bold",
-          textAlign: "center",
-          fontSize: "18px",
-          marginTop: "10px",
+      // Create hidden window for printing
+      const printWindow = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nodeIntegration: false,
+          contextIsolation: true,
         },
       });
-    }
 
-    if (receiptData.storeAddress) {
-      data.push({
-        type: "text",
-        value: receiptData.storeAddress,
-        style: { textAlign: "center", fontSize: "12px" },
+      const html = generateReceiptHTML(receiptData);
+
+      printWindow.loadURL(
+        `data:text/html;charset=utf-8,${encodeURIComponent(html)}`
+      );
+
+      printWindow.webContents.on("did-finish-load", () => {
+        // Get list of printers to verify the printer exists
+        printWindow.webContents
+          .getPrintersAsync()
+          .then((printers) => {
+            console.log(
+              "Available printers:",
+              printers.map((p) => p.name)
+            );
+
+            const printerExists = printers.some((p) => p.name === printerId);
+
+            if (!printerExists) {
+              console.error(`Printer "${printerId}" not found in system`);
+              printWindow.close();
+              reject(new Error(`Printer "${printerId}" not found`));
+              return;
+            }
+
+            // Print with specific printer
+            printWindow.webContents.print(
+              {
+                silent: true,
+                printBackground: true,
+                deviceName: printerId,
+                margins: {
+                  marginType: "none",
+                },
+                pageSize: {
+                  width: 80000, // 80mm in microns
+                  height: 297000, // Auto height, will be trimmed
+                },
+              },
+              (success, errorType) => {
+                printWindow.close();
+
+                if (success) {
+                  console.log("Print job sent successfully");
+                  resolve();
+                } else {
+                  console.error("Print failed:", errorType);
+                  reject(new Error(`Print failed: ${errorType}`));
+                }
+              }
+            );
+          })
+          .catch((error) => {
+            console.error("Error getting printers:", error);
+            printWindow.close();
+            reject(error);
+          });
       });
+
+      printWindow.webContents.on(
+        "did-fail-load",
+        (event, errorCode, errorDescription) => {
+          console.error("Failed to load print content:", errorDescription);
+          printWindow.close();
+          reject(new Error(`Failed to load: ${errorDescription}`));
+        }
+      );
+    } catch (error) {
+      console.error("Error printing receipt:", error);
+      reject(error);
     }
-
-    if (receiptData.storePhone) {
-      data.push({
-        type: "text",
-        value: receiptData.storePhone,
-        style: { textAlign: "center", fontSize: "12px", marginBottom: "10px" },
-      });
-    }
-
-    // Divider
-    data.push({
-      type: "text",
-      value: "--------------------------------",
-      style: { textAlign: "center" },
-    });
-
-    // Receipt info
-    if (receiptData.receiptNumber) {
-      data.push({
-        type: "text",
-        value: `Receipt #: ${receiptData.receiptNumber}`,
-        style: { fontSize: "12px", marginTop: "5px" },
-      });
-    }
-
-    if (receiptData.date) {
-      data.push({
-        type: "text",
-        value: `Date: ${receiptData.date}`,
-        style: { fontSize: "12px", marginBottom: "10px" },
-      });
-    }
-
-    // Divider
-    data.push({
-      type: "text",
-      value: "--------------------------------",
-      style: { textAlign: "center" },
-    });
-
-    // Items table
-    if (receiptData.items && receiptData.items.length > 0) {
-      // Table header
-      data.push({
-        type: "table",
-        style: { marginTop: "10px", fontSize: "12px" },
-        tableHeader: ["Item", "Qty", "Price", "Total"],
-        tableBody: receiptData.items.map((item) => [
-          item.name,
-          item.quantity.toString(),
-          `$${item.price.toFixed(2)}`,
-          `$${item.total.toFixed(2)}`,
-        ]),
-        tableHeaderStyle: { fontWeight: "bold", fontSize: "12px" },
-        tableBodyStyle: { fontSize: "12px" },
-      });
-    }
-
-    // Divider
-    data.push({
-      type: "text",
-      value: "--------------------------------",
-      style: { textAlign: "center", marginTop: "10px" },
-    });
-
-    // Totals
-    if (receiptData.subtotal !== undefined) {
-      data.push({
-        type: "table",
-        style: { fontSize: "12px" },
-        tableBody: [["Subtotal:", `$${receiptData.subtotal.toFixed(2)}`]],
-        tableBodyStyle: { fontSize: "12px" },
-      });
-    }
-
-    if (receiptData.tax !== undefined) {
-      data.push({
-        type: "table",
-        style: { fontSize: "12px" },
-        tableBody: [["Tax:", `$${receiptData.tax.toFixed(2)}`]],
-        tableBodyStyle: { fontSize: "12px" },
-      });
-    }
-
-    if (receiptData.total !== undefined) {
-      data.push({
-        type: "table",
-        style: { fontSize: "14px", fontWeight: "bold", marginTop: "5px" },
-        tableBody: [["TOTAL:", `$${receiptData.total.toFixed(2)}`]],
-        tableBodyStyle: { fontSize: "14px", fontWeight: "bold" },
-      });
-    }
-
-    if (receiptData.paymentMethod) {
-      data.push({
-        type: "text",
-        value: `Payment: ${receiptData.paymentMethod}`,
-        style: { fontSize: "12px", marginTop: "10px" },
-      });
-    }
-
-    // Divider
-    data.push({
-      type: "text",
-      value: "--------------------------------",
-      style: { textAlign: "center", marginTop: "10px" },
-    });
-
-    // Footer
-    if (receiptData.footer) {
-      data.push({
-        type: "text",
-        value: receiptData.footer,
-        style: { textAlign: "center", fontSize: "12px", marginTop: "5px" },
-      });
-    }
-
-    data.push({
-      type: "text",
-      value: "Thank you for your business!",
-      style: {
-        textAlign: "center",
-        fontSize: "12px",
-        marginTop: "5px",
-        marginBottom: "20px",
-      },
-    });
-
-    // Print options
-    const options: PosPrintOptions = {
-      preview: false,
-      margin: "0 0 0 0",
-      copies: 1,
-      printerName: printerId,
-      timeOutPerLine: 400,
-      pageSize: "80mm",
-      boolean: false,
-    };
-
-    // Execute print
-    await PosPrinter.print(data, options);
-
-    console.log("Print job sent successfully");
-  } catch (error) {
-    console.error("Error printing receipt:", error);
-    throw error;
-  }
+  });
 }
