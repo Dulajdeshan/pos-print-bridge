@@ -51,7 +51,7 @@ export class PrintService {
         });
 
         // Generate HTML
-        const html = this.htmlGenerator.generateDocumentHTML(document, options);
+        const html = this.htmlGenerator.generateDummyHTML(document, options);
 
         // Load HTML
         printWindow.loadURL(
