@@ -5,7 +5,6 @@ import {
 } from "node-thermal-printer";
 const { exec } = require("child_process");
 const util = require("util");
-const driver = require("printer");
 const execPromise = util.promisify(exec);
 
 export interface Printer {
@@ -132,7 +131,6 @@ export async function printReceipt(
       options: {
         timeout: 5000,
       },
-      driver,
     });
 
     // Check if printer is connected
