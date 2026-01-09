@@ -43,7 +43,7 @@ export class HtmlGeneratorService {
     }
 
     .receipt {
-      width: 72mm;
+      width: 70mm;
       margin-left: 3mm;
       padding-right: 2mm;
     }
