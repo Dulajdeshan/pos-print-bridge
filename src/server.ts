@@ -1,5 +1,6 @@
 import express, { Request, Response } from "express";
-import { getPrinters, printReceipt } from "./printer";
+import { getPrinters, printReceipt, printDocument } from "./printer";
+import { PrintOptions, PrintDocument } from "./types/printer.types";
 
 const app = express();
 const PORT = 9000;
@@ -38,10 +39,10 @@ app.get("/api/printers", async (req: Request, res: Response) => {
   }
 });
 
-// Print receipt
+// Print receipt (legacy format)
 app.post("/api/print", async (req: Request, res: Response) => {
   try {
-    const { printerId, receipt } = req.body;
+    const { printerId, receipt, options } = req.body;
 
     if (!printerId) {
       return res.status(400).json({
@@ -57,7 +58,43 @@ app.post("/api/print", async (req: Request, res: Response) => {
       });
     }
 
-    await printReceipt(printerId, receipt);
+    await printReceipt(printerId, receipt, options);
+
+    res.json({
+      success: true,
+      message: "Print job sent successfully",
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+});
+
+// Print document (advanced format)
+app.post("/api/print-document", async (req: Request, res: Response) => {
+  try {
+    const { document, options } = req.body as {
+      document: PrintDocument;
+      options: PrintOptions;
+    };
+
+    if (!document || !document.blocks) {
+      return res.status(400).json({
+        success: false,
+        error: "Document with blocks is required",
+      });
+    }
+
+    if (!options || !options.printerName) {
+      return res.status(400).json({
+        success: false,
+        error: "Print options with printerName is required",
+      });
+    }
+
+    await printDocument(document, options);
 
     res.json({
       success: true,
