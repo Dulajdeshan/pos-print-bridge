@@ -52,13 +52,14 @@ export class HtmlGeneratorService {
             width: ${paperWidth}mm;
             font-family: 'Courier New', Courier, monospace;
             font-size: ${actualBaseFontSize}px;
-            padding: 3mm 6mm;
             line-height: 1.4;
+            padding-top: 3mm;
+            padding-bottom: 3mm;
           }
           
           .content-wrapper {
-            max-width: ${paperWidth - 12}mm;
-            margin: 0 auto;
+            max-width: ${paperWidth - 8}mm;
+            width: 100%;
           }
           
           .text-left { text-align: left; }
@@ -68,7 +69,7 @@ export class HtmlGeneratorService {
           
           .divider {
             border: none;
-            margin: 5px 0;
+            margin: 6px 0;
           }
           
           .divider-solid {
@@ -89,17 +90,10 @@ export class HtmlGeneratorService {
             table-layout: fixed;
           }
           
-          table thead td {
-            padding: 1px 0px;
+          table td {
+            padding: 2px 2px;
             vertical-align: top;
-            overflow: hidden;
-            font-size: 0.9em;
-          }
-          
-          table tbody td {
-            padding: 1px 0px;
-            vertical-align: top;
-            overflow: hidden;
+            word-wrap: break-word;
           }
           
           img {
