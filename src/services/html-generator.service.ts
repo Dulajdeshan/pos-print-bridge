@@ -52,12 +52,12 @@ export class HtmlGeneratorService {
             width: ${paperWidth}mm;
             font-family: 'Courier New', Courier, monospace;
             font-size: ${actualBaseFontSize}px;
-            padding: 2mm 3mm;
+            padding: 2mm 5mm;
             line-height: 1.4;
           }
           
           .content-wrapper {
-            max-width: ${paperWidth - 6}mm;
+            max-width: ${paperWidth - 10}mm;
             margin: 0 auto;
           }
           
@@ -90,10 +90,9 @@ export class HtmlGeneratorService {
           }
           
           table td {
-            padding: 2px 2px;
+            padding: 1px 0px;
             vertical-align: top;
             overflow: hidden;
-            text-overflow: ellipsis;
           }
           
           img {
@@ -168,19 +167,15 @@ export class HtmlGeneratorService {
     const numCols = block.headers?.length || block.rows[0]?.length || 0;
     let colWidths: string[] = [];
 
-    if (style.columnAligns) {
-      // Smart column width distribution
-      // For receipt tables: Item (wider), Qty, Price, Total
-      if (numCols === 4) {
-        colWidths = ["45%", "15%", "20%", "20%"];
-      } else if (numCols === 2) {
-        colWidths = ["60%", "40%"];
-      } else {
-        // Equal distribution
-        const width = Math.floor(100 / numCols);
-        colWidths = Array(numCols).fill(`${width}%`);
-      }
+    // Smart column width distribution
+    if (numCols === 4) {
+      // Item, Qty, Price, Total
+      colWidths = ["38%", "13%", "24%", "25%"];
+    } else if (numCols === 2) {
+      // Label and value columns (Subtotal, Tax, Total)
+      colWidths = ["50%", "50%"];
     } else {
+      // Equal distribution
       const width = Math.floor(100 / numCols);
       colWidths = Array(numCols).fill(`${width}%`);
     }
@@ -192,7 +187,7 @@ export class HtmlGeneratorService {
         const align = style.columnAligns?.[index] || headerAlign;
         html += `<td class="text-${align}" style="width: ${
           colWidths[index]
-        }">${this.escapeHtml(header)}</td>\n`;
+        }; white-space: nowrap;">${this.escapeHtml(header)}</td>\n`;
       });
       html += "</tr></thead>\n";
     }
