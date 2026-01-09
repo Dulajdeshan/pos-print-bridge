@@ -174,13 +174,13 @@ export class HtmlGeneratorService {
     const numCols = block.headers?.length || block.rows[0]?.length || 0;
     let colWidths: string[] = [];
 
-    // Smart column width distribution
+    // Smart column width distribution for thermal printers
     if (numCols === 4) {
-      // Item, Qty, Price, Total - prioritize showing all content
-      colWidths = ["36%", "12%", "26%", "26%"];
+      // Item, Qty, Price, Total - optimized for 80mm thermal
+      colWidths = ["42%", "14%", "22%", "22%"];
     } else if (numCols === 2) {
       // Label and value columns (Subtotal, Tax, Total)
-      colWidths = ["48%", "52%"];
+      colWidths = ["50%", "50%"];
     } else {
       // Equal distribution
       const width = Math.floor(100 / numCols);
