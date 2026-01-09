@@ -5,6 +5,7 @@ import {
 } from "node-thermal-printer";
 const { exec } = require("child_process");
 const util = require("util");
+const driver = require("printer");
 const execPromise = util.promisify(exec);
 
 export interface Printer {
@@ -90,6 +91,7 @@ function detectPrinterTypeName(printerName: string): string {
   if (nameLower.includes("tanca")) return "TANCA";
   if (nameLower.includes("daruma")) return "DARUMA";
   if (nameLower.includes("brother")) return "BROTHER";
+  if (nameLower.includes("xprint")) return "XPRINT";
 
   return "EPSON/ESC-POS";
 }
@@ -105,6 +107,9 @@ async function detectPrinterType(printerId: string): Promise<PrinterTypes> {
     return PrinterTypes.DARUMA;
   } else if (printerNameLower.includes("brother")) {
     return PrinterTypes.BROTHER;
+  } else if (printerNameLower.includes("xprint")) {
+    // XPrint: treat as EPSON/ESC-POS for command compatibility
+    return PrinterTypes.EPSON;
   }
 
   // Default to EPSON as it's most compatible with generic ESC/POS printers
@@ -127,6 +132,7 @@ export async function printReceipt(
       options: {
         timeout: 5000,
       },
+      driver,
     });
 
     // Check if printer is connected

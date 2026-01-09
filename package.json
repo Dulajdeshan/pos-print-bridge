@@ -22,7 +22,8 @@
   },
   "dependencies": {
     "express": "^4.18.2",
-    "node-thermal-printer": "^4.4.4"
+    "node-thermal-printer": "^4.4.4",
+    "printer": "^0.4.0"
   },
   "build": {
     "appId": "com.yourcompany.posprinterbridge",
