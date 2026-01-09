@@ -20,134 +20,6 @@ const PAPER_SIZES: Record<PaperSize, number> = {
 };
 
 export class HtmlGeneratorService {
-  generateDummyHTML(document: PrintDocument, options: PrintOptions): string {
-    console.log(document, options);
-    return `
-    <!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8" />
-  <title>Receipt</title>
-
-  <style>
-    @page {
-      size: 80mm auto;
-      margin: 0;
-    }
-
-    body {
-      margin: 0;
-      font-family: "Courier New", monospace;
-      font-size: 12px;
-      color: #000;
-    }
-
-    .receipt {
-      width: 70mm;
-      margin-left: 0mm;
-      margin-right: 0mm;
-      padding-left: 2mm;
-      padding-right: 2mm;
-    }
-
-    .center { text-align: center; }
-    .right { text-align: right; }
-    .bold { font-weight: bold; }
-
-    .divider {
-      border-top: 1px dashed #000;
-      margin: 6px 0;
-    }
-
-    .row {
-      display: flex;
-      justify-content: space-between;
-    }
-
-    .item {
-      margin-bottom: 4px;
-    }
-
-    .item-name {
-      white-space: normal;
-      word-break: break-word;
-    }
-
-    .item-meta {
-       display: grid;
-        grid-template-columns: 1fr auto;
-        column-gap: 4mm;
-    }
-
-    .total {
-      font-size: 14px;
-      font-weight: bold;
-    }
-  </style>
-</head>
-
-<body>
-  <div class="receipt">
-
-    <div class="center bold">YOUR STORE NAME</div>
-    <div class="center">
-      123 Main Street<br>
-      Colombo<br>
-      077 123 4567
-    </div>
-
-    <div class="divider"></div>
-
-    <div>
-      Receipt #: 000123<br>
-      Date: 2026-01-10 13:45<br>
-      Cashier: Admin
-    </div>
-
-    <div class="divider"></div>
-
-    <div class="item">
-      <div class="item-name">Chicken Burger</div>
-      <div class="item-meta">
-        <span>2 x 650.00</span>
-        <span>1300.00</span>
-      </div>
-    </div>
-
-    <div class="item">
-      <div class="item-name">French Fries Large Size</div>
-      <div class="item-meta">
-        <span>1 x 450.00</span>
-        <span>450.00</span>
-      </div>
-    </div>
-
-    <div class="divider"></div>
-
-    <div class="row">
-      <span>Subtotal</span>
-      <span>1750.00</span>
-    </div>
-
-    <div class="row total">
-      <span>TOTAL</span>
-      <span>1750.00</span>
-    </div>
-
-    <div class="divider"></div>
-
-    <div class="center">
-      Thank you!<br>
-      Visit again 🙂
-    </div>
-
-  </div>
-</body>
-</html>
-
-    `;
-  }
-
   generateDocumentHTML(document: PrintDocument, options: PrintOptions): string {
     const paperWidth = PAPER_SIZES[options.paperSize || "80mm"];
     const baseFontSize = options.fontSize || 12;
@@ -347,7 +219,7 @@ export class HtmlGeneratorService {
   private renderDividerBlock(block: DividerBlock): string {
     const style = block.style || {};
     const marginTop = style.marginTop || 5;
-    const marginBottom = style.marginBottom || 5;
+    const marginBottom = style.marginBottom || 0;
     const lineStyle = style.lineStyle || "dashed";
 
     const inlineStyle = `margin-top: ${marginTop}px; margin-bottom: ${marginBottom}px;`;
