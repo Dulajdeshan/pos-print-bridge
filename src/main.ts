@@ -4,6 +4,7 @@ import { startServer } from "./server";
 
 let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
+let isQuitting = false;
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -19,7 +20,7 @@ function createWindow() {
   mainWindow.loadFile(path.join(__dirname, "../index.html"));
 
   mainWindow.on("close", (event) => {
-    if (!app.isQuitting) {
+    if (!isQuitting) {
       event.preventDefault();
       mainWindow?.hide();
     }
@@ -46,7 +47,7 @@ function createTray() {
     {
       label: "Quit",
       click: () => {
-        app.isQuitting = true;
+        isQuitting = true;
         app.quit();
       },
     },
@@ -77,5 +78,5 @@ app.on("window-all-closed", () => {
 });
 
 app.on("before-quit", () => {
-  app.isQuitting = true;
+  isQuitting = true;
 });
