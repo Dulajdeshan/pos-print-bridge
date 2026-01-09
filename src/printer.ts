@@ -1,9 +1,7 @@
 const { exec } = require("child_process");
 const util = require("util");
 const execPromise = util.promisify(exec);
-const fs = require("fs").promises;
-const path = require("path");
-const os = require("os");
+import { PosPrinter, PosPrintOptions } from "electron-pos-printer";
 
 export interface Printer {
   id: string;
@@ -91,102 +89,7 @@ function detectPrinterTypeName(printerName: string): string {
   if (nameLower.includes("xprint") || nameLower.includes("xp-"))
     return "XPrint";
 
-  return "ESC/POS";
-}
-
-function generateReceiptText(receiptData: ReceiptData): string {
-  let receipt = "";
-  const width = 48; // Standard thermal printer width in characters
-
-  // Helper function to center text
-  const center = (text: string) => {
-    const padding = Math.max(0, Math.floor((width - text.length) / 2));
-    return " ".repeat(padding) + text;
-  };
-
-  // Helper function to create line
-  const line = () => "-".repeat(width);
-
-  // Helper function to align text left and right
-  const leftRight = (left: string, right: string) => {
-    const spaces = Math.max(1, width - left.length - right.length);
-    return left + " ".repeat(spaces) + right;
-  };
-
-  // Header
-  if (receiptData.storeName) {
-    receipt += center(receiptData.storeName.toUpperCase()) + "\n";
-  }
-  if (receiptData.storeAddress) {
-    receipt += center(receiptData.storeAddress) + "\n";
-  }
-  if (receiptData.storePhone) {
-    receipt += center(receiptData.storePhone) + "\n";
-  }
-
-  receipt += line() + "\n";
-
-  // Receipt info
-  if (receiptData.receiptNumber) {
-    receipt += `Receipt #: ${receiptData.receiptNumber}\n`;
-  }
-  if (receiptData.date) {
-    receipt += `Date: ${receiptData.date}\n`;
-  }
-
-  receipt += line() + "\n";
-
-  // Items header
-  if (receiptData.items && receiptData.items.length > 0) {
-    receipt +=
-      "Item".padEnd(24) +
-      "Qty".padStart(6) +
-      "Price".padStart(9) +
-      "Total".padStart(9) +
-      "\n";
-    receipt += line() + "\n";
-
-    // Items
-    receiptData.items.forEach((item) => {
-      const itemName =
-        item.name.length > 24 ? item.name.substring(0, 21) + "..." : item.name;
-      receipt += itemName.padEnd(24);
-      receipt += item.quantity.toString().padStart(6);
-      receipt += item.price.toFixed(2).padStart(9);
-      receipt += item.total.toFixed(2).padStart(9);
-      receipt += "\n";
-    });
-
-    receipt += line() + "\n";
-  }
-
-  // Totals
-  if (receiptData.subtotal !== undefined) {
-    receipt += leftRight("Subtotal:", receiptData.subtotal.toFixed(2)) + "\n";
-  }
-  if (receiptData.tax !== undefined) {
-    receipt += leftRight("Tax:", receiptData.tax.toFixed(2)) + "\n";
-  }
-  if (receiptData.total !== undefined) {
-    receipt += leftRight("TOTAL:", receiptData.total.toFixed(2)) + "\n";
-  }
-
-  if (receiptData.paymentMethod) {
-    receipt += "\n";
-    receipt += `Payment Method: ${receiptData.paymentMethod}\n`;
-  }
-
-  receipt += line() + "\n";
-
-  // Footer
-  if (receiptData.footer) {
-    receipt += center(receiptData.footer) + "\n";
-  }
-
-  receipt += center("Thank you for your business!") + "\n";
-  receipt += "\n\n\n"; // Add some space before cut
-
-  return receipt;
+  return "Thermal";
 }
 
 export async function printReceipt(
@@ -196,39 +99,173 @@ export async function printReceipt(
   try {
     console.log(`Printing to: ${printerId}`);
 
-    // Generate receipt text
-    const receiptText = generateReceiptText(receiptData);
+    // Build receipt data for electron-pos-printer
+    const data: any[] = [];
 
-    // Create temporary file
-    const tempDir = os.tmpdir();
-    const tempFile = path.join(tempDir, `receipt_${Date.now()}.txt`);
+    // Store header
+    if (receiptData.storeName) {
+      data.push({
+        type: "text",
+        value: receiptData.storeName,
+        style: {
+          fontWeight: "bold",
+          textAlign: "center",
+          fontSize: "18px",
+          marginTop: "10px",
+        },
+      });
+    }
 
-    // Write receipt to temp file
-    await fs.writeFile(tempFile, receiptText, "utf8");
-    console.log(`Receipt file created: ${tempFile}`);
+    if (receiptData.storeAddress) {
+      data.push({
+        type: "text",
+        value: receiptData.storeAddress,
+        style: { textAlign: "center", fontSize: "12px" },
+      });
+    }
 
-    // Print using Windows print command
-    // Escape printer name for command line
-    const escapedPrinterName = printerId.replace(/"/g, '\\"');
-    const escapedFilePath = tempFile.replace(/\\/g, "\\\\");
+    if (receiptData.storePhone) {
+      data.push({
+        type: "text",
+        value: receiptData.storePhone,
+        style: { textAlign: "center", fontSize: "12px", marginBottom: "10px" },
+      });
+    }
 
-    // Use PowerShell to print the file
-    const printCommand = `powershell -Command "Get-Content '${tempFile}' | Out-Printer -Name '${escapedPrinterName}'"`;
+    // Divider
+    data.push({
+      type: "text",
+      value: "--------------------------------",
+      style: { textAlign: "center" },
+    });
 
-    console.log("Executing print command...");
-    await execPromise(printCommand);
+    // Receipt info
+    if (receiptData.receiptNumber) {
+      data.push({
+        type: "text",
+        value: `Receipt #: ${receiptData.receiptNumber}`,
+        style: { fontSize: "12px", marginTop: "5px" },
+      });
+    }
+
+    if (receiptData.date) {
+      data.push({
+        type: "text",
+        value: `Date: ${receiptData.date}`,
+        style: { fontSize: "12px", marginBottom: "10px" },
+      });
+    }
+
+    // Divider
+    data.push({
+      type: "text",
+      value: "--------------------------------",
+      style: { textAlign: "center" },
+    });
+
+    // Items table
+    if (receiptData.items && receiptData.items.length > 0) {
+      // Table header
+      data.push({
+        type: "table",
+        style: { marginTop: "10px", fontSize: "12px" },
+        tableHeader: ["Item", "Qty", "Price", "Total"],
+        tableBody: receiptData.items.map((item) => [
+          item.name,
+          item.quantity.toString(),
+          `$${item.price.toFixed(2)}`,
+          `$${item.total.toFixed(2)}`,
+        ]),
+        tableHeaderStyle: { fontWeight: "bold", fontSize: "12px" },
+        tableBodyStyle: { fontSize: "12px" },
+      });
+    }
+
+    // Divider
+    data.push({
+      type: "text",
+      value: "--------------------------------",
+      style: { textAlign: "center", marginTop: "10px" },
+    });
+
+    // Totals
+    if (receiptData.subtotal !== undefined) {
+      data.push({
+        type: "table",
+        style: { fontSize: "12px" },
+        tableBody: [["Subtotal:", `$${receiptData.subtotal.toFixed(2)}`]],
+        tableBodyStyle: { fontSize: "12px" },
+      });
+    }
+
+    if (receiptData.tax !== undefined) {
+      data.push({
+        type: "table",
+        style: { fontSize: "12px" },
+        tableBody: [["Tax:", `$${receiptData.tax.toFixed(2)}`]],
+        tableBodyStyle: { fontSize: "12px" },
+      });
+    }
+
+    if (receiptData.total !== undefined) {
+      data.push({
+        type: "table",
+        style: { fontSize: "14px", fontWeight: "bold", marginTop: "5px" },
+        tableBody: [["TOTAL:", `$${receiptData.total.toFixed(2)}`]],
+        tableBodyStyle: { fontSize: "14px", fontWeight: "bold" },
+      });
+    }
+
+    if (receiptData.paymentMethod) {
+      data.push({
+        type: "text",
+        value: `Payment: ${receiptData.paymentMethod}`,
+        style: { fontSize: "12px", marginTop: "10px" },
+      });
+    }
+
+    // Divider
+    data.push({
+      type: "text",
+      value: "--------------------------------",
+      style: { textAlign: "center", marginTop: "10px" },
+    });
+
+    // Footer
+    if (receiptData.footer) {
+      data.push({
+        type: "text",
+        value: receiptData.footer,
+        style: { textAlign: "center", fontSize: "12px", marginTop: "5px" },
+      });
+    }
+
+    data.push({
+      type: "text",
+      value: "Thank you for your business!",
+      style: {
+        textAlign: "center",
+        fontSize: "12px",
+        marginTop: "5px",
+        marginBottom: "20px",
+      },
+    });
+
+    // Print options
+    const options: PosPrintOptions = {
+      preview: false,
+      margin: "0 0 0 0",
+      copies: 1,
+      printerName: printerId,
+      timeOutPerLine: 400,
+      pageSize: "80mm",
+      boolean: false,
+    };
+
+    // Execute print
+    await PosPrinter.print(data, options);
 
     console.log("Print job sent successfully");
-
-    // Clean up temp file after a delay
-    setTimeout(async () => {
-      try {
-        await fs.unlink(tempFile);
-        console.log("Temp file cleaned up");
-      } catch (err) {
-        console.error("Error cleaning up temp file:", err);
-      }
-    }, 5000);
   } catch (error) {
     console.error("Error printing receipt:", error);
     throw error;

@@ -10,7 +10,12 @@
     "package": "electron-builder",
     "package:win": "electron-builder --win"
   },
-  "keywords": ["pos", "printer", "electron", "bridge"],
+  "keywords": [
+    "pos",
+    "printer",
+    "electron",
+    "bridge"
+  ],
   "author": "Your Name",
   "license": "MIT",
   "devDependencies": {
@@ -21,9 +26,8 @@
     "typescript": "^5.3.3"
   },
   "dependencies": {
-    "express": "^4.18.2",
-    "node-thermal-printer": "^4.4.4",
-    "printer": "^0.4.0"
+    "electron-pos-printer": "^1.3.8",
+    "express": "^4.18.2"
   },
   "build": {
     "appId": "com.yourcompany.posprinterbridge",
@@ -36,7 +40,9 @@
       "package.json"
     ],
     "win": {
-      "target": ["nsis"],
+      "target": [
+        "nsis"
+      ],
       "icon": "assets/icon.ico"
     },
     "nsis": {
