@@ -43,8 +43,9 @@ export class HtmlGeneratorService {
     }
 
     .receipt {
-      width: 76mm;
-      padding: 4mm;
+      width: 72mm;
+      margin-left: 3mm;
+      padding-right: 2mm;
     }
 
     .center { text-align: center; }
@@ -71,9 +72,9 @@ export class HtmlGeneratorService {
     }
 
     .item-meta {
-      display: flex;
-      justify-content: space-between;
-      font-size: 11px;
+       display: grid;
+        grid-template-columns: 1fr auto;
+        column-gap: 4mm;
     }
 
     .total {
