@@ -2,14 +2,93 @@
 <html>
 
 <head>
-    <meta charset="UTF-8" />
-    <title>Print Bridge</title>
+    <meta charset="UTF-8">
+    <title>POS Printer Bridge</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            max-width: 400px;
+        }
+
+        h1 {
+            color: #667eea;
+            margin-top: 0;
+            font-size: 24px;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 8px 16px;
+            background: #10b981;
+            color: white;
+            border-radius: 20px;
+            font-size: 14px;
+            margin: 20px 0;
+            font-weight: 600;
+        }
+
+        .info {
+            color: #666;
+            line-height: 1.6;
+            margin: 20px 0;
+        }
+
+        .endpoint {
+            background: #f3f4f6;
+            padding: 12px;
+            border-radius: 6px;
+            margin: 10px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            color: #374151;
+        }
+
+        .note {
+            font-size: 12px;
+            color: #9ca3af;
+            margin-top: 20px;
+        }
+    </style>
 </head>
 
 <body>
-    <h2>🖨️ Print Bridge</h2>
-    <p>Status: Running</p>
-    <p>API: http://localhost:9000</p>
+    <div class="container">
+        <h1>🖨️ POS Printer Bridge</h1>
+        <div class="status">● Running</div>
+
+        <div class="info">
+            <p><strong>Server is active on port 3456</strong></p>
+            <p>Available endpoints:</p>
+
+            <div class="endpoint">
+                GET /api/printers
+            </div>
+
+            <div class="endpoint">
+                POST /api/print
+            </div>
+        </div>
+
+        <div class="note">
+            This app runs in the system tray.<br>
+            You can close this window safely.
+        </div>
+    </div>
 </body>
 
 </html>
