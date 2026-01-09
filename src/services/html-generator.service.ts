@@ -52,12 +52,12 @@ export class HtmlGeneratorService {
             width: ${paperWidth}mm;
             font-family: 'Courier New', Courier, monospace;
             font-size: ${actualBaseFontSize}px;
-            padding: 2mm 5mm;
+            padding: 3mm 6mm;
             line-height: 1.4;
           }
           
           .content-wrapper {
-            max-width: ${paperWidth - 10}mm;
+            max-width: ${paperWidth - 12}mm;
             margin: 0 auto;
           }
           
@@ -89,7 +89,14 @@ export class HtmlGeneratorService {
             table-layout: fixed;
           }
           
-          table td {
+          table thead td {
+            padding: 1px 0px;
+            vertical-align: top;
+            overflow: hidden;
+            font-size: 0.9em;
+          }
+          
+          table tbody td {
             padding: 1px 0px;
             vertical-align: top;
             overflow: hidden;
@@ -169,11 +176,11 @@ export class HtmlGeneratorService {
 
     // Smart column width distribution
     if (numCols === 4) {
-      // Item, Qty, Price, Total
-      colWidths = ["38%", "13%", "24%", "25%"];
+      // Item, Qty, Price, Total - prioritize showing all content
+      colWidths = ["36%", "12%", "26%", "26%"];
     } else if (numCols === 2) {
       // Label and value columns (Subtotal, Tax, Total)
-      colWidths = ["50%", "50%"];
+      colWidths = ["48%", "52%"];
     } else {
       // Equal distribution
       const width = Math.floor(100 / numCols);
