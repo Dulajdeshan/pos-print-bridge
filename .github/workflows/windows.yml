@@ -23,13 +23,8 @@ jobs:
           node-version: "20"
           cache: "npm"
 
-      - name: Remove lockfile (for Windows compatibility)
-        run: |
-          if (Test-Path package-lock.json) {
-            Remove-Item package-lock.json
-          }
       - name: Install dependencies
-        run: npm install --legacy-peer-deps
+        run: npm ci
 
       - name: Build TypeScript
         run: npm run build
