@@ -52,8 +52,13 @@ export class HtmlGeneratorService {
             width: ${paperWidth}mm;
             font-family: 'Courier New', Courier, monospace;
             font-size: ${actualBaseFontSize}px;
-            padding: 5mm;
+            padding: 2mm 3mm;
             line-height: 1.4;
+          }
+          
+          .content-wrapper {
+            max-width: ${paperWidth - 6}mm;
+            margin: 0 auto;
           }
           
           .text-left { text-align: left; }
@@ -81,11 +86,14 @@ export class HtmlGeneratorService {
           table {
             width: 100%;
             border-collapse: collapse;
+            table-layout: fixed;
           }
           
           table td {
-            padding: 2px 4px;
+            padding: 2px 2px;
             vertical-align: top;
+            overflow: hidden;
+            text-overflow: ellipsis;
           }
           
           img {
@@ -95,7 +103,9 @@ export class HtmlGeneratorService {
         </style>
       </head>
       <body>
-        ${bodyContent}
+        <div class="content-wrapper">
+          ${bodyContent}
+        </div>
       </body>
       </html>
     `;
@@ -154,12 +164,35 @@ export class HtmlGeneratorService {
 
     let html = `<table style="${tableStyle}">\n`;
 
+    // Calculate column widths
+    const numCols = block.headers?.length || block.rows[0]?.length || 0;
+    let colWidths: string[] = [];
+
+    if (style.columnAligns) {
+      // Smart column width distribution
+      // For receipt tables: Item (wider), Qty, Price, Total
+      if (numCols === 4) {
+        colWidths = ["45%", "15%", "20%", "20%"];
+      } else if (numCols === 2) {
+        colWidths = ["60%", "40%"];
+      } else {
+        // Equal distribution
+        const width = Math.floor(100 / numCols);
+        colWidths = Array(numCols).fill(`${width}%`);
+      }
+    } else {
+      const width = Math.floor(100 / numCols);
+      colWidths = Array(numCols).fill(`${width}%`);
+    }
+
     if (block.headers && block.headers.length > 0) {
       const headerAlign = style.headerAlign || "left";
       html += '<thead><tr class="' + headerBold + '">\n';
       block.headers.forEach((header, index) => {
         const align = style.columnAligns?.[index] || headerAlign;
-        html += `<td class="text-${align}">${this.escapeHtml(header)}</td>\n`;
+        html += `<td class="text-${align}" style="width: ${
+          colWidths[index]
+        }">${this.escapeHtml(header)}</td>\n`;
       });
       html += "</tr></thead>\n";
     }
@@ -169,7 +202,9 @@ export class HtmlGeneratorService {
       html += "<tr>\n";
       row.forEach((cell, index) => {
         const align = style.columnAligns?.[index] || "left";
-        html += `<td class="text-${align}">${this.escapeHtml(cell)}</td>\n`;
+        html += `<td class="text-${align}" style="width: ${
+          colWidths[index]
+        }">${this.escapeHtml(cell)}</td>\n`;
       });
       html += "</tr>\n";
     });
