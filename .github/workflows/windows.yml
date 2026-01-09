@@ -23,8 +23,12 @@ jobs:
           node-version: "20"
           cache: "npm"
 
+      - name: Remove lockfile (for Windows compatibility)
+        run: |
+          if exist package-lock.json del package-lock.json
+
       - name: Install dependencies
-        run: npm ci
+        run: npm install
 
       - name: Build TypeScript
         run: npm run build
