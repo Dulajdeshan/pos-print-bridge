@@ -10,14 +10,22 @@ function createWindow() {
   mainWindow = new BrowserWindow({
     width: 400,
     height: 300,
-    show: false,
+    show: true,
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
     },
   });
 
-  mainWindow.loadFile(path.join(__dirname, "../index.html"));
+  const htmlPath = path.join(__dirname, "../index.html");
+  console.log("Loading HTML from:", htmlPath);
+
+  mainWindow.loadFile(htmlPath).catch((err) => {
+    console.error("Failed to load index.html:", err);
+  });
+
+  // Open DevTools for debugging (remove this in production)
+  mainWindow.webContents.openDevTools();
 
   mainWindow.on("close", (event) => {
     if (!isQuitting) {
