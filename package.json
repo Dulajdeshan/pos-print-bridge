@@ -37,8 +37,14 @@
     "files": [
       "dist/**/*",
       "index.html",
-      "package.json",
-      "assets/**/*"
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "assets",
+        "to": "assets",
+        "filter": ["**/*"]
+      }
     ],
     "win": {
       "target": [

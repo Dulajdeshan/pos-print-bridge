@@ -44,11 +44,24 @@ function createWindow() {
 
 function createTray() {
   // Load the icon from assets folder
-  const iconPath = app.isPackaged
-    ? path.join(process.resourcesPath, "assets", "icon.ico")
-    : path.join(__dirname, "..", "assets", "icon.ico");
+  let iconPath: string;
+
+  if (app.isPackaged) {
+    // In production, check multiple possible locations
+    iconPath = path.join(process.resourcesPath, "assets", "icon.ico");
+    console.log("Production icon path:", iconPath);
+  } else {
+    // In development
+    iconPath = path.join(__dirname, "..", "assets", "icon.ico");
+    console.log("Development icon path:", iconPath);
+  }
 
   const icon = nativeImage.createFromPath(iconPath);
+
+  if (icon.isEmpty()) {
+    console.error("Failed to load tray icon from:", iconPath);
+  }
+
   tray = new Tray(icon);
 
   const contextMenu = Menu.buildFromTemplate([
