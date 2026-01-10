@@ -43,8 +43,12 @@ function createWindow() {
 }
 
 function createTray() {
-  // Create a simple 16x16 icon for the tray
-  const icon = nativeImage.createEmpty();
+  // Load the icon from assets folder
+  const iconPath = app.isPackaged
+    ? path.join(process.resourcesPath, "assets", "icon.ico")
+    : path.join(__dirname, "..", "assets", "icon.ico");
+
+  const icon = nativeImage.createFromPath(iconPath);
   tray = new Tray(icon);
 
   const contextMenu = Menu.buildFromTemplate([
