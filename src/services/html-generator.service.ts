@@ -201,7 +201,9 @@ export class HtmlGeneratorService {
       if (typeof row === "string") {
         // Full-width row
         const fullWidthAlign = style.fullWidthRowAlign || "left";
-        html += `<td colspan="${numCols}" class="text-${fullWidthAlign}">${this.escapeHtml(row)}</td>\n`;
+        html += `<td colspan="${numCols}" class="text-${fullWidthAlign}">${this.escapeHtml(
+          row
+        )}</td>\n`;
       } else {
         // Normal row with multiple cells
         row.forEach((cell, index) => {
