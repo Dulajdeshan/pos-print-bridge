@@ -196,12 +196,22 @@ export class HtmlGeneratorService {
     html += "<tbody>\n";
     block.rows.forEach((row) => {
       html += "<tr>\n";
-      row.forEach((cell, index) => {
-        const align = style.columnAligns?.[index] || "left";
-        html += `<td class="text-${align}" style="width: ${
-          colWidths[index]
-        }">${this.escapeHtml(cell)}</td>\n`;
-      });
+
+      // Check if this is a full-width row (single string) or a normal row (array)
+      if (typeof row === "string") {
+        // Full-width row
+        const fullWidthAlign = style.fullWidthRowAlign || "left";
+        html += `<td colspan="${numCols}" class="text-${fullWidthAlign}">${this.escapeHtml(row)}</td>\n`;
+      } else {
+        // Normal row with multiple cells
+        row.forEach((cell, index) => {
+          const align = style.columnAligns?.[index] || "left";
+          html += `<td class="text-${align}" style="width: ${
+            colWidths[index]
+          }">${this.escapeHtml(cell)}</td>\n`;
+        });
+      }
+
       html += "</tr>\n";
     });
     html += "</tbody>\n";

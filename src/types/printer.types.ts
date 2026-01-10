@@ -36,7 +36,7 @@ export interface TextBlock {
 export interface TableBlock {
   type: "table";
   headers?: string[];
-  rows: string[][];
+  rows: (string[] | string)[]; // Each row can be an array of cells OR a single string for full-width
   style?: {
     headerAlign?: TextAlign;
     columnAligns?: TextAlign[]; // Alignment per column
@@ -45,6 +45,7 @@ export interface TableBlock {
     fontScale?: number;
     marginTop?: number;
     marginBottom?: number;
+    fullWidthRowAlign?: TextAlign; // Alignment for full-width rows (default: left)
   };
 }
 

@@ -12,7 +12,7 @@ An Electron-based bridge application that enables cloud POS systems to communica
 - 🔤 **Font scaling:** Adjustable font sizes (e.g., 120% = fontScale: 1.2)
 - 🎨 **Rich formatting:**
   - Text blocks with alignment, bold, custom sizing
-  - Tables with column alignment
+  - Tables with column alignment and full-width rows for lengthy content
   - Dividers (solid, dashed, dotted)
   - Spacers for custom spacing
   - Image support
@@ -206,6 +206,32 @@ The bridge runs a local server on `http://localhost:3456`
   }
 }
 ```
+
+**Full-Width Rows in Tables:**
+
+Tables now support full-width rows for lengthy content like product names. Simply use a string instead of an array for that row:
+
+```json
+{
+  "type": "table",
+  "headers": ["Qty", "Price", "Total"],
+  "rows": [
+    "Product Name Test 1",
+    ["1", "160.00", "160.00"],
+    "Product Name Test 2 - Very Long Product Name That Needs Full Width",
+    ["2", "160.00", "320.00"]
+  ],
+  "style": {
+    "columnAligns": ["center", "right", "right"],
+    "fullWidthRowAlign": "left"
+  }
+}
+```
+
+In this example:
+- String rows (`"Product Name Test 1"`) span across all columns with full width
+- Array rows (`["1", "160.00", "160.00"]`) display as normal table cells
+- `fullWidthRowAlign` controls the alignment of full-width rows (default: "left")
 
 3. **Divider Block**
 
