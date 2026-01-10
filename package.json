@@ -10,7 +10,12 @@
     "package": "electron-builder",
     "package:win": "electron-builder --win"
   },
-  "keywords": ["pos", "printer", "electron", "bridge"],
+  "keywords": [
+    "pos",
+    "printer",
+    "electron",
+    "bridge"
+  ],
   "author": "Your Name",
   "license": "MIT",
   "devDependencies": {
@@ -35,7 +40,9 @@
       "package.json"
     ],
     "win": {
-      "target": ["nsis"],
+      "target": [
+        "nsis"
+      ],
       "icon": "assets/icon.ico"
     },
     "nsis": {
