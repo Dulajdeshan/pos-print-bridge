@@ -192,6 +192,18 @@ The bridge runs a local server on `http://localhost:3456`
 }
 ```
 
+**Line Breaks:** Use `\n` in text values to create line breaks:
+
+```json
+{
+  "type": "text",
+  "value": "Store Name\nCity, State\nPhone: (555) 123-4567",
+  "style": {
+    "align": "center"
+  }
+}
+```
+
 2. **Table Block**
 
 ```json
@@ -232,6 +244,7 @@ In this example:
 - String rows (`"Product Name Test 1"`) span across all columns with full width
 - Array rows (`["1", "160.00", "160.00"]`) display as normal table cells
 - `fullWidthRowAlign` controls the alignment of full-width rows (default: "left")
+- Line breaks (`\n`) are supported in all text, including table cells and full-width rows
 
 3. **Divider Block**
 

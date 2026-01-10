@@ -259,6 +259,7 @@ export class HtmlGeneratorService {
       '"': "&quot;",
       "'": "&#039;",
     };
-    return text.replace(/[&<>"']/g, (m) => map[m]);
+    // First escape HTML special characters, then convert \n to <br>
+    return text.replace(/[&<>"']/g, (m) => map[m]).replace(/\n/g, "<br>");
   }
 }
