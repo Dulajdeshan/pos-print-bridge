@@ -24,8 +24,10 @@ function createWindow() {
     console.error("Failed to load index.html:", err);
   });
 
-  // Open DevTools for debugging (remove this in production)
-  mainWindow.webContents.openDevTools();
+  // Open DevTools only in development
+  if (process.env.NODE_ENV === "development" || !app.isPackaged) {
+    mainWindow.webContents.openDevTools();
+  }
 
   mainWindow.on("close", (event) => {
     if (!isQuitting) {
