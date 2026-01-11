@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>POS Printer Bridge</title>
+    <title>Benzene POS Printer Bridge</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -23,6 +23,12 @@
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
             text-align: center;
             max-width: 400px;
+        }
+
+        .icon {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 20px;
         }
 
         h1 {
@@ -46,16 +52,7 @@
             color: #666;
             line-height: 1.6;
             margin: 20px 0;
-        }
-
-        .endpoint {
-            background: #f3f4f6;
-            padding: 12px;
-            border-radius: 6px;
-            margin: 10px 0;
-            font-family: 'Courier New', monospace;
-            font-size: 13px;
-            color: #374151;
+            font-size: 15px;
         }
 
         .note {
@@ -68,20 +65,12 @@
 
 <body>
     <div class="container">
-        <h1>🖨️ POS Printer Bridge</h1>
+        <img src="assets/icon.ico" alt="POS Printer Bridge" class="icon">
+        <h1>POS Printer Bridge</h1>
         <div class="status">● Running</div>
 
         <div class="info">
-            <p><strong>Server is active on port 9000</strong></p>
-            <p>Available endpoints:</p>
-
-            <div class="endpoint">
-                GET /api/printers
-            </div>
-
-            <div class="endpoint">
-                POST /api/print
-            </div>
+            <p>The printer bridge service is active and ready to handle print requests from your POS system.</p>
         </div>
 
         <div class="note">
