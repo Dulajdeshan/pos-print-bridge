@@ -23,8 +23,11 @@ const PAPER_SIZES: Record<PaperSize, number> = {
 };
 
 export class HtmlGeneratorService {
+  private paperWidthMm: number = 80; // Store paper width for barcode scaling
+
   generateDocumentHTML(document: PrintDocument, options: PrintOptions): string {
     const paperWidth = PAPER_SIZES[options.paperSize || "80mm"];
+    this.paperWidthMm = paperWidth; // Store for barcode rendering
     const baseFontSize = options.fontSize || 12;
     const fontScale = options.fontScale || 1.0;
     const actualBaseFontSize = Math.round(baseFontSize * fontScale);
@@ -261,7 +264,13 @@ export class HtmlGeneratorService {
   private renderBarcodeBlock(block: BarcodeBlock): string {
     const style = block.style || {};
     const align = style.align || "center";
-    const width = style.width || 200;
+
+    // Calculate default width based on paper size (80% of usable width)
+    // Converting mm to pixels at 96 DPI: 1mm ≈ 3.78 pixels
+    const usableWidthMm = this.paperWidthMm - 8; // Subtract margins
+    const defaultWidthPx = Math.round(usableWidthMm * 3.78 * 0.8); // 80% of usable width
+
+    const width = style.width || defaultWidthPx;
     const height = style.height || 50;
     const displayValue = style.displayValue !== false;
     const fontSize = style.fontSize || 12;
@@ -285,7 +294,7 @@ export class HtmlGeneratorService {
       // Convert canvas to data URL
       const dataUrl = canvas.toDataURL("image/png");
 
-      const imgStyle = `margin-top: ${marginTop}px; margin-bottom: ${marginBottom}px;`;
+      const imgStyle = `margin-top: ${marginTop}px; margin-bottom: ${marginBottom}px; max-width: 100%;`;
 
       return `<div class="text-${align}"><img src="${dataUrl}" style="${imgStyle}" /></div>\n`;
     } catch (error) {

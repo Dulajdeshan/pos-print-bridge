@@ -302,6 +302,14 @@ In this example:
 }
 ```
 
+**Note on Barcode Width:**
+- If `width` is not specified, the barcode automatically scales to 80% of the paper's usable width
+- For 80mm paper: ~217px default width
+- For 58mm paper: ~151px default width
+- For 44mm paper: ~109px default width
+- You can override with a custom `width` value if needed
+- `max-width: 100%` ensures barcodes never overflow the paper
+
 **Supported Barcode Types:**
 - `CODE128` (default) - Universal, supports alphanumeric
 - `EAN13` - European Article Number (13 digits)
