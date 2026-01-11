@@ -265,10 +265,10 @@ export class HtmlGeneratorService {
     const style = block.style || {};
     const align = style.align || "center";
 
-    // Calculate default width based on paper size (80% of usable width)
+    // Calculate default width based on paper size (50% of usable width)
     // Converting mm to pixels at 96 DPI: 1mm ≈ 3.78 pixels
     const usableWidthMm = this.paperWidthMm - 8; // Subtract margins
-    const defaultWidthPx = Math.round(usableWidthMm * 3.78 * 0.8); // 80% of usable width
+    const defaultWidthPx = Math.round(usableWidthMm * 3.78 * 0.5); // 50% of usable width
 
     const width = style.width || defaultWidthPx;
     const height = style.height || 50;
@@ -293,7 +293,7 @@ export class HtmlGeneratorService {
       // Convert canvas to data URL
       const dataUrl = canvas.toDataURL("image/png");
 
-      const imgStyle = `margin-top: ${marginTop}px; max-width: 100%;`;
+      const imgStyle = `margin-top: ${marginTop}px; max-width: 100%; width: ${width}px;`;
 
       let html = `<div class="text-${align}">\n`;
       html += `  <img src="${dataUrl}" style="${imgStyle}" />\n`;
