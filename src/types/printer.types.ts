@@ -75,12 +75,30 @@ export interface ImageBlock {
   };
 }
 
+export type BarcodeType = "CODE128" | "EAN13" | "EAN8" | "UPC" | "CODE39" | "ITF14" | "MSI" | "pharmacode";
+
+export interface BarcodeBlock {
+  type: "barcode";
+  value: string; // The data to encode in the barcode
+  barcodeType?: BarcodeType; // Type of barcode (default: CODE128)
+  style?: {
+    align?: TextAlign;
+    width?: number; // Width in pixels (default: 200)
+    height?: number; // Height in pixels (default: 50)
+    displayValue?: boolean; // Show the value below barcode (default: true)
+    fontSize?: number; // Font size for the value text (default: 12)
+    marginTop?: number;
+    marginBottom?: number;
+  };
+}
+
 export type PrintBlock =
   | TextBlock
   | TableBlock
   | DividerBlock
   | SpacerBlock
-  | ImageBlock;
+  | ImageBlock
+  | BarcodeBlock;
 
 export interface PrintDocument {
   blocks: PrintBlock[];

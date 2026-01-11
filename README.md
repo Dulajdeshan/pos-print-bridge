@@ -16,6 +16,7 @@ An Electron-based bridge application that enables cloud POS systems to communica
   - Dividers (solid, dashed, dotted)
   - Spacers for custom spacing
   - Image support
+  - Barcode support (CODE128, EAN13, EAN8, UPC, CODE39, ITF14, MSI, pharmacode)
 - 💪 Works with XPrint, EPSON, Star, and any thermal printer
 - 🌐 RESTful API for easy integration
 - 🪟 Windows support with system tray integration
@@ -278,6 +279,64 @@ In this example:
     "align": "center",
     "width": 200,
     "height": 100
+  }
+}
+```
+
+6. **Barcode Block**
+
+```json
+{
+  "type": "barcode",
+  "value": "1234567890",
+  "barcodeType": "CODE128",
+  "style": {
+    "align": "center",
+    "width": 200,
+    "height": 50,
+    "displayValue": true,
+    "fontSize": 12,
+    "marginTop": 10,
+    "marginBottom": 10
+  }
+}
+```
+
+**Supported Barcode Types:**
+- `CODE128` (default) - Universal, supports alphanumeric
+- `EAN13` - European Article Number (13 digits)
+- `EAN8` - European Article Number (8 digits)
+- `UPC` - Universal Product Code
+- `CODE39` - Alphanumeric barcode
+- `ITF14` - Interleaved 2 of 5 (14 digits)
+- `MSI` - Modified Plessey
+- `pharmacode` - Pharmaceutical Binary Code
+
+**Example with barcode in a receipt:**
+
+```json
+{
+  "document": {
+    "blocks": [
+      {
+        "type": "text",
+        "value": "Order #12345",
+        "style": { "align": "center", "bold": true }
+      },
+      {
+        "type": "barcode",
+        "value": "12345",
+        "barcodeType": "CODE128",
+        "style": {
+          "align": "center",
+          "width": 200,
+          "height": 50
+        }
+      },
+      {
+        "type": "divider"
+      }
+    ]
   }
 }
 ```

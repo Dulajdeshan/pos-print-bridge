@@ -6,9 +6,12 @@ import {
   DividerBlock,
   SpacerBlock,
   ImageBlock,
+  BarcodeBlock,
   PrintOptions,
   PaperSize,
 } from "../types/printer.types";
+import JsBarcode from "jsbarcode";
+import { createCanvas } from "canvas";
 
 const PAPER_SIZES: Record<PaperSize, number> = {
   "80mm": 80,
@@ -123,6 +126,8 @@ export class HtmlGeneratorService {
         return this.renderSpacerBlock(block);
       case "image":
         return this.renderImageBlock(block);
+      case "barcode":
+        return this.renderBarcodeBlock(block);
       default:
         return "";
     }
@@ -251,6 +256,45 @@ export class HtmlGeneratorService {
     return `<div class="text-${align}"><img src="${this.escapeHtml(
       block.url
     )}" style="${imgStyle}" /></div>\n`;
+  }
+
+  private renderBarcodeBlock(block: BarcodeBlock): string {
+    const style = block.style || {};
+    const align = style.align || "center";
+    const width = style.width || 200;
+    const height = style.height || 50;
+    const displayValue = style.displayValue !== false;
+    const fontSize = style.fontSize || 12;
+    const marginTop = style.marginTop || 0;
+    const marginBottom = style.marginBottom || 0;
+    const barcodeType = block.barcodeType || "CODE128";
+
+    try {
+      // Create a canvas and generate barcode
+      const canvas = createCanvas(width, height);
+
+      JsBarcode(canvas, block.value, {
+        format: barcodeType,
+        width: 2,
+        height: height,
+        displayValue: displayValue,
+        fontSize: fontSize,
+        margin: 0,
+      });
+
+      // Convert canvas to data URL
+      const dataUrl = canvas.toDataURL("image/png");
+
+      const imgStyle = `margin-top: ${marginTop}px; margin-bottom: ${marginBottom}px;`;
+
+      return `<div class="text-${align}"><img src="${dataUrl}" style="${imgStyle}" /></div>\n`;
+    } catch (error) {
+      console.error("Failed to generate barcode:", error);
+      // Fallback to text if barcode generation fails
+      return `<div class="text-${align}" style="margin-top: ${marginTop}px; margin-bottom: ${marginBottom}px;">${this.escapeHtml(
+        block.value
+      )}</div>\n`;
+    }
   }
 
   private escapeHtml(text: string): string {
