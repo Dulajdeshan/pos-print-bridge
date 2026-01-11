@@ -279,24 +279,38 @@ export class HtmlGeneratorService {
     const barcodeType = block.barcodeType || "CODE128";
 
     try {
-      // Create a canvas and generate barcode
+      // Create a canvas and generate barcode (without text)
       const canvas = createCanvas(width, height);
 
       JsBarcode(canvas, block.value, {
         format: barcodeType,
         width: 2,
         height: height,
-        displayValue: displayValue,
-        fontSize: fontSize,
+        displayValue: false, // Always false - we'll render text ourselves
         margin: 0,
       });
 
       // Convert canvas to data URL
       const dataUrl = canvas.toDataURL("image/png");
 
-      const imgStyle = `margin-top: ${marginTop}px; margin-bottom: ${marginBottom}px; max-width: 100%;`;
+      const imgStyle = `margin-top: ${marginTop}px; max-width: 100%;`;
 
-      return `<div class="text-${align}"><img src="${dataUrl}" style="${imgStyle}" /></div>\n`;
+      let html = `<div class="text-${align}">\n`;
+      html += `  <img src="${dataUrl}" style="${imgStyle}" />\n`;
+
+      // Add custom text below barcode if displayValue is true
+      if (displayValue) {
+        html += `  <div style="font-size: ${fontSize}px; margin-top: 2px; margin-bottom: ${marginBottom}px; font-family: 'Courier New', monospace;">${this.escapeHtml(
+          block.value
+        )}</div>\n`;
+      } else {
+        // If no text, add bottom margin to the container
+        html += `  <div style="margin-bottom: ${marginBottom}px;"></div>\n`;
+      }
+
+      html += `</div>\n`;
+
+      return html;
     } catch (error) {
       console.error("Failed to generate barcode:", error);
       // Fallback to text if barcode generation fails
