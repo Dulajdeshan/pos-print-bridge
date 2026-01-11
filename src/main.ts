@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Tray, Menu, nativeImage } from "electron";
+import { app, BrowserWindow, Tray, Menu, nativeImage, protocol, net } from "electron";
 import * as path from "path";
 import { startServer } from "./server";
 
@@ -72,6 +72,15 @@ function createTray() {
 }
 
 app.whenReady().then(() => {
+  // Register custom protocol for assets
+  protocol.handle("asset", (request) => {
+    const url = request.url.replace("asset://", "");
+    const assetPath = app.isPackaged
+      ? path.join(process.resourcesPath, "assets", url)
+      : path.join(__dirname, "..", "assets", url);
+    return net.fetch(`file://${assetPath}`);
+  });
+
   createWindow();
   createTray();
   startServer();
