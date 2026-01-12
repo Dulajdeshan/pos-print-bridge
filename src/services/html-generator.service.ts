@@ -23,18 +23,15 @@ const PAPER_SIZES: Record<PaperSize, number> = {
 };
 
 export class HtmlGeneratorService {
-  private paperWidthMm: number = 80; // Store paper width for barcode scaling
-
   generateDocumentHTML(document: PrintDocument, options: PrintOptions): string {
     const paperWidth = PAPER_SIZES[options.paperSize || "80mm"];
-    this.paperWidthMm = paperWidth; // Store for barcode rendering
     const baseFontSize = options.fontSize || 12;
     const fontScale = options.fontScale || 1.0;
     const actualBaseFontSize = Math.round(baseFontSize * fontScale);
 
     let bodyContent = "";
     document.blocks.forEach((block) => {
-      bodyContent += this.renderBlock(block, actualBaseFontSize);
+      bodyContent += this.renderBlock(block, paperWidth, actualBaseFontSize);
     });
 
     return `
@@ -117,7 +114,11 @@ export class HtmlGeneratorService {
     `;
   }
 
-  private renderBlock(block: PrintBlock, baseFontSize: number): string {
+  private renderBlock(
+    block: PrintBlock,
+    paperWidth: number,
+    baseFontSize: number
+  ): string {
     switch (block.type) {
       case "text":
         return this.renderTextBlock(block, baseFontSize);
@@ -130,7 +131,7 @@ export class HtmlGeneratorService {
       case "image":
         return this.renderImageBlock(block);
       case "barcode":
-        return this.renderBarcodeBlock(block);
+        return this.renderBarcodeBlock(block, paperWidth);
       default:
         return "";
     }
@@ -261,13 +262,13 @@ export class HtmlGeneratorService {
     )}" style="${imgStyle}" /></div>\n`;
   }
 
-  private renderBarcodeBlock(block: BarcodeBlock): string {
+  private renderBarcodeBlock(block: BarcodeBlock, paperWidth: number): string {
     const style = block.style || {};
     const align = style.align || "center";
 
     // Calculate default width based on paper size (50% of usable width)
     // Converting mm to pixels at 96 DPI: 1mm ≈ 3.78 pixels
-    const usableWidthMm = this.paperWidthMm - 8; // Subtract margins
+    const usableWidthMm = paperWidth - 8; // Subtract margins
     const defaultWidthPx = Math.round(usableWidthMm * 3.78 * 0.5); // 50% of usable width
 
     const width = style.width || defaultWidthPx;
