@@ -1,4 +1,12 @@
-import { app, BrowserWindow, Tray, Menu, nativeImage, protocol, net } from "electron";
+import {
+  app,
+  BrowserWindow,
+  Tray,
+  Menu,
+  nativeImage,
+  protocol,
+  net,
+} from "electron";
 import * as path from "path";
 import { startServer } from "./server";
 
@@ -9,7 +17,7 @@ let isQuitting = false;
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 400,
-    height: 300,
+    height: 440,
     show: true,
     webPreferences: {
       nodeIntegration: true,
