@@ -15,10 +15,13 @@ let tray: Tray | null = null;
 let isQuitting = false;
 
 function createWindow() {
+  // Show window only if not launched on startup or not packaged
+  const shouldShow = !app.isPackaged || !app.getLoginItemSettings().wasOpenedAtLogin;
+
   mainWindow = new BrowserWindow({
     width: 400,
     height: 440,
-    show: true,
+    show: shouldShow,
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
@@ -80,6 +83,14 @@ function createTray() {
 }
 
 app.whenReady().then(() => {
+  // Enable auto-launch on system startup (production only)
+  if (app.isPackaged) {
+    app.setLoginItemSettings({
+      openAtLogin: true,
+      openAsHidden: true, // Start minimized to tray
+    });
+  }
+
   // Register custom protocol for assets
   protocol.handle("asset", (request) => {
     const url = request.url.replace("asset://", "");

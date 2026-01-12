@@ -22,6 +22,7 @@ An Electron-based bridge application that enables cloud POS systems to communica
 - 🌐 RESTful API for easy integration
 - 🖥️ **Cross-platform support:** Windows, macOS, and Linux
 - 🔄 Runs in the background with system tray integration
+- 🚀 **Auto-launch on system startup** - Starts automatically when computer boots
 - 📐 **Fixed left padding** - Proper 5mm margins for perfect alignment
 
 ## Installation
