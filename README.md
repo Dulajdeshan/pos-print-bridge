@@ -10,6 +10,7 @@ An Electron-based bridge application that enables cloud POS systems to communica
   - Advanced document format (full control with blocks)
 - 📏 **Multiple paper sizes:** 80mm, 78mm, 76mm, 58mm, 57mm, 44mm
 - 🔤 **Font scaling:** Adjustable font sizes (e.g., 120% = fontScale: 1.2)
+- ✍️ **Professional typography:** Roboto Mono font with regular (400) and bold (700) weights
 - 🎨 **Rich formatting:**
   - Text blocks with alignment, bold, custom sizing
   - Tables with column alignment and full-width rows for lengthy content
@@ -19,8 +20,8 @@ An Electron-based bridge application that enables cloud POS systems to communica
   - Barcode support (CODE128, EAN13, EAN8, UPC, CODE39, ITF14, MSI, pharmacode)
 - 💪 Works with XPrint, EPSON, Star, and any thermal printer
 - 🌐 RESTful API for easy integration
-- 🪟 Windows support with system tray integration
-- 🔄 Runs in the background
+- 🖥️ **Cross-platform support:** Windows, macOS, and Linux
+- 🔄 Runs in the background with system tray integration
 - 📐 **Fixed left padding** - Proper 5mm margins for perfect alignment
 
 ## Installation
@@ -349,15 +350,26 @@ In this example:
 }
 ```
 
-## Building for Windows
+## Building for Production
 
 ### Local Build
 
+**Windows:**
 ```bash
 npm run package:win
 ```
 
-The installer will be created in the `release/` directory.
+**macOS:**
+```bash
+npm run package:mac
+```
+
+**Linux:**
+```bash
+npm run package:linux
+```
+
+The installer/package will be created in the `release/` directory.
 
 ### GitHub Actions Build
 
@@ -368,7 +380,7 @@ The installer will be created in the `release/` directory.
    git tag v1.0.0
    git push origin v1.0.0
    ```
-4. The workflow will create a GitHub release with the installer
+4. The workflow will create a GitHub release with installers for all platforms
 
 ## Integration Example
 
@@ -434,28 +446,47 @@ const printResponse = await fetch("http://localhost:3456/api/print-document", {
 
 ## System Requirements
 
+### Windows
 - Windows 10 or later
-- Thermal printer with Windows drivers installed (80mm or 58mm)
-- **Works with all thermal printer brands** including:
-  - XPrint / XP-series printers
-  - EPSON thermal printers
-  - Star Micronics printers
-  - Generic ESC/POS printers
-  - Any Windows-compatible thermal printer
+- Thermal printer with Windows drivers installed
+
+### macOS
+- macOS 10.13 (High Sierra) or later
+- Thermal printer configured with CUPS (Common Unix Printing System)
+- Most USB/network thermal printers work out of the box
+
+### Linux
+- Modern Linux distribution with CUPS installed
+- Thermal printer configured in CUPS
+- Most distributions include CUPS by default
+
+### Supported Printers (All Platforms)
+- **XPrint / XP-series printers**
+- **EPSON thermal printers**
+- **Star Micronics printers**
+- **Generic ESC/POS printers**
+- **Any printer with system drivers installed**
 
 ## Troubleshooting
 
 ### Printer Not Found
 
-- Ensure the printer is properly installed and has Windows drivers
+**Windows:**
+- Ensure the printer is installed in Control Panel > Devices and Printers
 - Check that the printer is powered on and connected
 - Verify the printer name matches exactly (case-sensitive)
+
+**macOS/Linux:**
+- Verify printer is configured in CUPS: Open `http://localhost:631` in browser
+- Check printer status with `lpstat -p -d` command
+- Ensure CUPS service is running
 
 ### Print Job Not Executing
 
 - Check if the printer is set as the default printer
 - Ensure the printer is not in error state or out of paper
 - Verify printer drivers are up to date
+- On Linux/macOS: Check CUPS logs at `/var/log/cups/error_log`
 
 ## License
 

@@ -12,6 +12,7 @@ import {
 } from "../types/printer.types";
 import JsBarcode from "jsbarcode";
 import { createCanvas } from "canvas";
+import { getFontFaceCSS } from "./fonts";
 
 const PAPER_SIZES: Record<PaperSize, number> = {
   "80mm": 80,
@@ -40,20 +41,22 @@ export class HtmlGeneratorService {
       <head>
         <meta charset="UTF-8">
         <style>
+          ${getFontFaceCSS()}
+
           @page {
             size: ${paperWidth}mm auto;
             margin: 0;
           }
-          
+
           * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
           }
-          
+
           body {
             width: ${paperWidth}mm;
-            font-family: 'Courier New', Courier, monospace;
+            font-family: 'Roboto Mono', 'Courier New', Courier, monospace;
             font-size: ${actualBaseFontSize}px;
             line-height: 1.4;
             padding-top: 3mm;
@@ -301,7 +304,7 @@ export class HtmlGeneratorService {
 
       // Add custom text below barcode if displayValue is true
       if (displayValue) {
-        html += `  <div style="font-size: ${fontSize}px; margin-top: 2px; margin-bottom: ${marginBottom}px; font-family: 'Courier New', monospace;">${this.escapeHtml(
+        html += `  <div style="font-size: ${fontSize}px; margin-top: 2px; margin-bottom: ${marginBottom}px; font-family: 'Roboto Mono', 'Courier New', monospace;">${this.escapeHtml(
           block.value
         )}</div>\n`;
       } else {
