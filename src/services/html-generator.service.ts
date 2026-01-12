@@ -213,6 +213,7 @@ export class HtmlGeneratorService {
       if (typeof row === "string") {
         // Full-width row
         const fullWidthAlign = style.fullWidthRowAlign || "left";
+        const bold = style.fullWidthRowBold ? "bold" : "";
         html += `<td colspan="${numCols}" class="text-${fullWidthAlign}">${this.escapeHtml(
           row
         )}</td>\n`;
@@ -220,7 +221,8 @@ export class HtmlGeneratorService {
         // Normal row with multiple cells
         row.forEach((cell, index) => {
           const align = style.columnAligns?.[index] || "left";
-          html += `<td class="text-${align}" style="width: ${
+          const bold = style.cellBold?.[index] ? "bold" : "";
+          html += `<td class="text-${align} ${bold}" style="width: ${
             colWidths[index]
           }">${this.escapeHtml(cell)}</td>\n`;
         });

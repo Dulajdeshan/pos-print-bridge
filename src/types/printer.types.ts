@@ -45,7 +45,9 @@ export interface TableBlock {
     fontScale?: number;
     marginTop?: number;
     marginBottom?: number;
+    cellBold?: boolean[]; // Bold per cell
     fullWidthRowAlign?: TextAlign; // Alignment for full-width rows (default: left)
+    fullWidthRowBold?: boolean; // Bold for full-width rows (default: false)
   };
 }
 
@@ -75,7 +77,15 @@ export interface ImageBlock {
   };
 }
 
-export type BarcodeType = "CODE128" | "EAN13" | "EAN8" | "UPC" | "CODE39" | "ITF14" | "MSI" | "pharmacode";
+export type BarcodeType =
+  | "CODE128"
+  | "EAN13"
+  | "EAN8"
+  | "UPC"
+  | "CODE39"
+  | "ITF14"
+  | "MSI"
+  | "pharmacode";
 
 export interface BarcodeBlock {
   type: "barcode";

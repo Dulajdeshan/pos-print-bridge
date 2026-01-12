@@ -215,6 +215,7 @@ The bridge runs a local server on `http://localhost:3456`
   "rows": [["Data1", "Data2"]],
   "style": {
     "columnAligns": ["left", "right"],
+    "cellBold": [true, false],
     "headerBold": true,
     "fontScale": 1.0
   }
@@ -237,12 +238,14 @@ Tables now support full-width rows for lengthy content like product names. Simpl
   ],
   "style": {
     "columnAligns": ["center", "right", "right"],
-    "fullWidthRowAlign": "left"
+    "fullWidthRowAlign": "left",
+    "fullWidthRowBold": true
   }
 }
 ```
 
 In this example:
+
 - String rows (`"Product Name Test 1"`) span across all columns with full width
 - Array rows (`["1", "160.00", "160.00"]`) display as normal table cells
 - `fullWidthRowAlign` controls the alignment of full-width rows (default: "left")
@@ -304,6 +307,7 @@ In this example:
 ```
 
 **Note on Barcode Width:**
+
 - If `width` is not specified, the barcode automatically scales to 80% of the paper's usable width
 - For 80mm paper: ~217px default width
 - For 58mm paper: ~151px default width
@@ -312,6 +316,7 @@ In this example:
 - `max-width: 100%` ensures barcodes never overflow the paper
 
 **Supported Barcode Types:**
+
 - `CODE128` (default) - Universal, supports alphanumeric
 - `EAN13` - European Article Number (13 digits)
 - `EAN8` - European Article Number (8 digits)
@@ -355,16 +360,19 @@ In this example:
 ### Local Build
 
 **Windows:**
+
 ```bash
 npm run package:win
 ```
 
 **macOS:**
+
 ```bash
 npm run package:mac
 ```
 
 **Linux:**
+
 ```bash
 npm run package:linux
 ```
@@ -447,20 +455,24 @@ const printResponse = await fetch("http://localhost:3456/api/print-document", {
 ## System Requirements
 
 ### Windows
+
 - Windows 10 or later
 - Thermal printer with Windows drivers installed
 
 ### macOS
+
 - macOS 10.13 (High Sierra) or later
 - Thermal printer configured with CUPS (Common Unix Printing System)
 - Most USB/network thermal printers work out of the box
 
 ### Linux
+
 - Modern Linux distribution with CUPS installed
 - Thermal printer configured in CUPS
 - Most distributions include CUPS by default
 
 ### Supported Printers (All Platforms)
+
 - **XPrint / XP-series printers**
 - **EPSON thermal printers**
 - **Star Micronics printers**
@@ -472,11 +484,13 @@ const printResponse = await fetch("http://localhost:3456/api/print-document", {
 ### Printer Not Found
 
 **Windows:**
+
 - Ensure the printer is installed in Control Panel > Devices and Printers
 - Check that the printer is powered on and connected
 - Verify the printer name matches exactly (case-sensitive)
 
 **macOS/Linux:**
+
 - Verify printer is configured in CUPS: Open `http://localhost:631` in browser
 - Check printer status with `lpstat -p -d` command
 - Ensure CUPS service is running
