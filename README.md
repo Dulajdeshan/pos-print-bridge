@@ -216,12 +216,26 @@ The bridge runs a local server on `http://localhost:3456`
   "rows": [["Data1", "Data2"]],
   "style": {
     "columnAligns": ["left", "right"],
-    "cellBold": [true, false],
+    "columnWidths": ["60%", "40%"],
+    "columnBolds": [true, false],
     "headerBold": true,
     "fontScale": 1.0
   }
 }
 ```
+
+**Table Styling Options:**
+
+- `columnAligns`: Array of alignments per column (`"left"`, `"center"`, `"right"`)
+- `columnWidths`: Array of width percentages per column (e.g., `["40%", "20%", "20%", "20%"]`)
+  - If not specified, smart defaults are used:
+    - 4 columns: `["42%", "14%", "22%", "22%"]` (optimized for Item/Qty/Price/Total)
+    - 2 columns: `["50%", "50%"]`
+    - Other: Equal distribution
+- `columnBolds`: Array of boolean values to make specific columns bold
+- `headerBold`: Make header row bold (default: `true`)
+- `fullWidthRowBold`: Make full-width rows bold (default: `false`)
+- `fullWidthRowAlign`: Alignment for full-width rows (default: `"left"`)
 
 **Full-Width Rows in Tables:**
 

@@ -40,12 +40,13 @@ export interface TableBlock {
   style?: {
     headerAlign?: TextAlign;
     columnAligns?: TextAlign[]; // Alignment per column
+    columnWidths?: string[]; // Width per column as percentage (e.g., ["40%", "20%", "20%", "20%"])
     headerBold?: boolean;
     fontSize?: number;
     fontScale?: number;
     marginTop?: number;
     marginBottom?: number;
-    cellBold?: boolean[]; // Bold per cell
+    columnBolds?: boolean[]; // Bold per column
     fullWidthRowAlign?: TextAlign; // Alignment for full-width rows (default: left)
     fullWidthRowBold?: boolean; // Bold for full-width rows (default: false)
   };

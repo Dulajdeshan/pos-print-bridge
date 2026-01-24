@@ -180,8 +180,10 @@ export class HtmlGeneratorService {
     const numCols = block.headers?.length || block.rows[0]?.length || 0;
     let colWidths: string[] = [];
 
-    // Smart column width distribution for thermal printers
-    if (numCols === 4) {
+    // Use custom column widths if provided, otherwise use smart defaults
+    if (style.columnWidths && style.columnWidths.length === numCols) {
+      colWidths = style.columnWidths;
+    } else if (numCols === 4) {
       // Item, Qty, Price, Total - optimized for 80mm thermal
       colWidths = ["42%", "14%", "22%", "22%"];
     } else if (numCols === 2) {
@@ -214,14 +216,14 @@ export class HtmlGeneratorService {
         // Full-width row
         const fullWidthAlign = style.fullWidthRowAlign || "left";
         const bold = style.fullWidthRowBold ? "bold" : "";
-        html += `<td colspan="${numCols}" class="text-${fullWidthAlign}">${this.escapeHtml(
+        html += `<td colspan="${numCols}" class="text-${fullWidthAlign} ${bold}">${this.escapeHtml(
           row
         )}</td>\n`;
       } else {
-        // Normal row with multiple cells
+        // Normal row with multiple columns
         row.forEach((cell, index) => {
           const align = style.columnAligns?.[index] || "left";
-          const bold = style.cellBold?.[index] ? "bold" : "";
+          const bold = style.columnBolds?.[index] ? "bold" : "";
           html += `<td class="text-${align} ${bold}" style="width: ${
             colWidths[index]
           }">${this.escapeHtml(cell)}</td>\n`;
