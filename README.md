@@ -122,7 +122,58 @@ The bridge runs a local server on `http://localhost:3456`
 }
 ```
 
-### 3. Print Document (Advanced Format)
+### 3. Preview Document HTML (For Testing/Debugging)
+
+**Endpoint:** `POST /api/preview-document`
+
+**Description:** Returns the generated HTML for the document without printing. Perfect for testing layouts and debugging.
+
+**Request Body:**
+
+```json
+{
+  "document": {
+    "blocks": [
+      {
+        "type": "text",
+        "value": "Test Receipt",
+        "style": {
+          "align": "center",
+          "bold": true
+        }
+      }
+    ]
+  },
+  "options": {
+    "paperSize": "80mm",
+    "fontSize": 12,
+    "fontScale": 1.0
+  }
+}
+```
+
+**Response:** HTML content (Content-Type: text/html)
+
+**Usage Example:**
+
+```javascript
+// Preview receipt in browser
+const response = await fetch("http://localhost:9000/api/preview-document", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    document: { blocks: [...] },
+    options: { paperSize: "80mm" }
+  })
+});
+
+const html = await response.text();
+// Open in new window or display in iframe
+const previewWindow = window.open();
+previewWindow.document.write(html);
+```
+
+### 4. Print Document (Advanced Format)
 
 **Endpoint:** `POST /api/print-document`
 

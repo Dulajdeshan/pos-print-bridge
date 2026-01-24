@@ -176,32 +176,40 @@ export class HtmlGeneratorService {
 
     let html = `<table style="${tableStyle}">\n`;
 
-    // Calculate column widths
-    const numCols = block.headers?.length || block.rows[0]?.length || 0;
-    let colWidths: string[] = [];
+    // Calculate maximum number of columns across all rows
+    let maxCols = block.headers?.length || 0;
+    block.rows.forEach((row) => {
+      if (Array.isArray(row)) {
+        maxCols = Math.max(maxCols, row.length);
+      }
+    });
 
-    // Use custom column widths if provided, otherwise use smart defaults
-    if (style.columnWidths && style.columnWidths.length === numCols) {
-      colWidths = style.columnWidths;
-    } else if (numCols === 4) {
-      // Item, Qty, Price, Total - optimized for 80mm thermal
-      colWidths = ["42%", "14%", "22%", "22%"];
-    } else if (numCols === 2) {
-      // Label and value columns (Subtotal, Tax, Total)
-      colWidths = ["50%", "50%"];
-    } else {
-      // Equal distribution
-      const width = Math.floor(100 / numCols);
-      colWidths = Array(numCols).fill(`${width}%`);
-    }
+    // Helper function to get column widths for a specific number of columns
+    const getColWidths = (numCols: number): string[] => {
+      // Use custom column widths if provided and matches
+      if (style.columnWidths && style.columnWidths.length === numCols) {
+        return style.columnWidths;
+      } else if (numCols === 4) {
+        // Item, Qty, Price, Total - optimized for 80mm thermal
+        return ["42%", "14%", "22%", "22%"];
+      } else if (numCols === 2) {
+        // Label and value columns (Subtotal, Tax, Total)
+        return ["50%", "50%"];
+      } else {
+        // Equal distribution
+        const width = Math.floor(100 / numCols);
+        return Array(numCols).fill(`${width}%`);
+      }
+    };
 
     if (block.headers && block.headers.length > 0) {
       const headerAlign = style.headerAlign || "left";
+      const headerColWidths = getColWidths(block.headers.length);
       html += '<thead><tr class="' + headerBold + '">\n';
       block.headers.forEach((header, index) => {
         const align = style.columnAligns?.[index] || headerAlign;
         html += `<td class="text-${align}" style="width: ${
-          colWidths[index]
+          headerColWidths[index]
         }; white-space: nowrap;">${this.escapeHtml(header)}</td>\n`;
       });
       html += "</tr></thead>\n";
@@ -213,19 +221,20 @@ export class HtmlGeneratorService {
 
       // Check if this is a full-width row (single string) or a normal row (array)
       if (typeof row === "string") {
-        // Full-width row
+        // Full-width row - use maxCols for colspan
         const fullWidthAlign = style.fullWidthRowAlign || "left";
         const bold = style.fullWidthRowBold ? "bold" : "";
-        html += `<td colspan="${numCols}" class="text-${fullWidthAlign} ${bold}">${this.escapeHtml(
+        html += `<td colspan="${maxCols}" class="text-${fullWidthAlign} ${bold}">${this.escapeHtml(
           row
         )}</td>\n`;
       } else {
-        // Normal row with multiple columns
+        // Normal row with multiple columns - calculate widths for this specific row
+        const rowColWidths = getColWidths(row.length);
         row.forEach((cell, index) => {
           const align = style.columnAligns?.[index] || "left";
           const bold = style.columnBolds?.[index] ? "bold" : "";
           html += `<td class="text-${align} ${bold}" style="width: ${
-            colWidths[index]
+            rowColWidths[index]
           }">${this.escapeHtml(cell)}</td>\n`;
         });
       }

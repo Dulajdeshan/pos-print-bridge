@@ -7,11 +7,13 @@ import {
 import { PrinterService } from "./services/printer.service";
 import { PrintService } from "./services/print.service";
 import { DocumentConverterService } from "./services/document-converter.service";
+import { HtmlGeneratorService } from "./services/html-generator.service";
 
 // Service instances
 const printerService = new PrinterService();
 const printService = new PrintService();
 const documentConverter = new DocumentConverterService();
+const htmlGenerator = new HtmlGeneratorService();
 
 // Export functions for API
 export async function getPrinters(): Promise<Printer[]> {
@@ -41,4 +43,20 @@ export async function printReceipt(
   };
 
   return printService.printDocument(document, printOptions);
+}
+
+export function generateDocumentPreview(
+  document: PrintDocument,
+  options: Partial<PrintOptions>
+): string {
+  const printOptions: PrintOptions = {
+    printerName: "preview", // Not used for preview
+    paperSize: options?.paperSize || "80mm",
+    fontSize: options?.fontSize || 12,
+    fontScale: options?.fontScale || 1.0,
+    copies: 1,
+    silent: true,
+  };
+
+  return htmlGenerator.generateDocumentHTML(document, printOptions);
 }

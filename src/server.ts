@@ -1,5 +1,5 @@
 import express, { Request, Response } from "express";
-import { getPrinters, printReceipt, printDocument } from "./printer";
+import { getPrinters, printReceipt, printDocument, generateDocumentPreview } from "./printer";
 import { PrintOptions, PrintDocument } from "./types/printer.types";
 
 const app = express();
@@ -100,6 +100,34 @@ app.post("/api/print-document", async (req: Request, res: Response) => {
       success: true,
       message: "Print job sent successfully",
     });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+});
+
+// Preview document HTML (for testing/debugging)
+app.post("/api/preview-document", (req: Request, res: Response) => {
+  try {
+    const { document, options } = req.body as {
+      document: PrintDocument;
+      options?: Partial<PrintOptions>;
+    };
+
+    if (!document || !document.blocks) {
+      return res.status(400).json({
+        success: false,
+        error: "Document with blocks is required",
+      });
+    }
+
+    const html = generateDocumentPreview(document, options || {});
+
+    // Return HTML directly
+    res.setHeader("Content-Type", "text/html");
+    res.send(html);
   } catch (error) {
     res.status(500).json({
       success: false,
