@@ -3,16 +3,30 @@ const util = require("util");
 const execPromise = util.promisify(exec);
 import { Printer } from "../types/printer.types";
 
+const PRINTER_CACHE_TTL_MS = 30_000;
+
 export class PrinterService {
+  private cachedPrinters: Printer[] | null = null;
+  private cacheExpiresAt = 0;
+
   async getPrinters(): Promise<Printer[]> {
+    if (this.cachedPrinters && Date.now() < this.cacheExpiresAt) {
+      return this.cachedPrinters;
+    }
+
     try {
+      let printers: Printer[];
       if (process.platform === "win32") {
-        return await this.getWindowsPrinters();
+        printers = await this.getWindowsPrinters();
       } else if (process.platform === "darwin") {
-        return await this.getMacOSPrinters();
+        printers = await this.getMacOSPrinters();
       } else {
-        return await this.getLinuxPrinters();
+        printers = await this.getLinuxPrinters();
       }
+
+      this.cachedPrinters = printers;
+      this.cacheExpiresAt = Date.now() + PRINTER_CACHE_TTL_MS;
+      return printers;
     } catch (error) {
       console.error("Error getting printers:", error);
       throw error;
@@ -21,18 +35,21 @@ export class PrinterService {
 
   private async getWindowsPrinters(): Promise<Printer[]> {
     try {
+      // PowerShell Get-Printer is ~10x faster than wmic on Windows
       const { stdout } = await execPromise(
-        "wmic printer get name,default /format:csv"
+        `powershell -NoProfile -NonInteractive -Command "Get-Printer | Select-Object -Property Name,Default | ConvertTo-Csv -NoTypeInformation"`,
+        { timeout: 8000 }
       );
 
       const lines = stdout.split("\n").filter((line: string) => line.trim());
       const printers: Printer[] = [];
 
+      // Skip header row
       for (let i = 1; i < lines.length; i++) {
         const parts = lines[i].split(",");
         if (parts.length >= 2) {
-          const isDefault = parts[1].trim().toUpperCase() === "TRUE";
-          const name = parts[2]?.trim();
+          const name = parts[0].trim().replace(/^"|"$/g, "");
+          const isDefault = parts[1].trim().replace(/^"|"$/g, "").toUpperCase() === "TRUE";
 
           if (name) {
             printers.push({
