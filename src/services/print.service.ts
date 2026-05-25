@@ -76,52 +76,45 @@ export class PrintService {
         // Generate HTML
         const html = this.htmlGenerator.generateDocumentHTML(document, options);
 
-        // Use executeJavaScript to update content without a full navigation reload
-        const loaded = new Promise<void>((res, rej) => {
-          if (printWindow.webContents.getURL() === "") {
-            // First load — navigate once to a blank page then inject
-            printWindow.loadURL("about:blank");
-            printWindow.webContents.once("did-finish-load", () => res());
-            printWindow.webContents.once("did-fail-load", (_e, _c, desc) =>
-              rej(new Error(`Failed to load: ${desc}`))
-            );
-          } else {
-            res();
-          }
-        });
-
-        await loaded;
-
-        await printWindow.webContents.executeJavaScript(
-          `document.open();document.write(${JSON.stringify(html)});document.close();`
-        );
-
         const paperWidth = PAPER_SIZES[options.paperSize || "80mm"];
 
-        printWindow.webContents.print(
-          {
-            silent: options.silent !== false,
-            printBackground: true,
-            deviceName: options.printerName,
-            copies: options.copies || 1,
-            margins: {
-              marginType: "none",
-            },
-            pageSize: {
-              width: paperWidth * 1000,
-              height: 297000,
-            },
-          },
-          (success, errorType) => {
-            if (success) {
-              console.log("Print job sent successfully");
-              resolve();
-            } else {
-              console.error("Print failed:", errorType);
-              reject(new Error(`Print failed: ${errorType}`));
-            }
-          }
+        // Use loadURL with data URI so did-finish-load fires only after full
+        // layout is complete — document.write() resolves before layout, causing
+        // the right-side clipping seen when printing immediately after.
+        printWindow.loadURL(
+          `data:text/html;charset=utf-8,${encodeURIComponent(html)}`
         );
+
+        printWindow.webContents.once("did-finish-load", () => {
+          printWindow.webContents.print(
+            {
+              silent: options.silent !== false,
+              printBackground: true,
+              deviceName: options.printerName,
+              copies: options.copies || 1,
+              margins: {
+                marginType: "none",
+              },
+              pageSize: {
+                width: paperWidth * 1000,
+                height: 297000,
+              },
+            },
+            (success, errorType) => {
+              if (success) {
+                console.log("Print job sent successfully");
+                resolve();
+              } else {
+                console.error("Print failed:", errorType);
+                reject(new Error(`Print failed: ${errorType}`));
+              }
+            }
+          );
+        });
+
+        printWindow.webContents.once("did-fail-load", (_e, _c, desc) => {
+          reject(new Error(`Failed to load: ${desc}`));
+        });
       } catch (error) {
         console.error("Error printing document:", error);
         reject(error);
