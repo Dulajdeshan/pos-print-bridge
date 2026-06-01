@@ -40,6 +40,8 @@ export async function printReceipt(
     fontScale: options?.fontScale || 1.0,
     copies: options?.copies || 1,
     silent: options?.silent !== false,
+    marginLeft: options?.marginLeft,
+    marginRight: options?.marginRight,
   };
 
   return printService.printDocument(document, printOptions);
@@ -56,6 +58,8 @@ export function generateDocumentPreview(
     fontScale: options?.fontScale || 1.0,
     copies: 1,
     silent: true,
+    marginLeft: options?.marginLeft,
+    marginRight: options?.marginRight,
   };
 
   return htmlGenerator.generateDocumentHTML(document, printOptions);
