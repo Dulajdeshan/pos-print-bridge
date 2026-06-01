@@ -18,6 +18,8 @@ export interface PrintOptions {
   fontScale?: number; // Scale multiplier (e.g., 1.2 = 120%, default: 1.0)
   copies?: number;
   silent?: boolean;
+  marginLeft?: number; // Left margin in mm (default: 0)
+  marginRight?: number; // Right margin in mm (default: 0)
 }
 
 export interface TextBlock {

@@ -26,6 +26,8 @@ const PAPER_SIZES: Record<PaperSize, number> = {
 export class HtmlGeneratorService {
   generateDocumentHTML(document: PrintDocument, options: PrintOptions): string {
     const paperWidth = PAPER_SIZES[options.paperSize || "80mm"];
+    const marginLeft = options.marginLeft || 0;
+    const marginRight = options.marginRight || 0;
     const baseFontSize = options.fontSize || 12;
     const fontScale = options.fontScale || 1.0;
     const actualBaseFontSize = Math.round(baseFontSize * fontScale);
@@ -61,10 +63,11 @@ export class HtmlGeneratorService {
             line-height: 1.4;
             padding-top: 3mm;
             padding-bottom: 3mm;
+            padding-left: ${marginLeft}mm;
+            padding-right: ${marginRight}mm;
           }
-          
+
           .content-wrapper {
-            max-width: ${paperWidth - 8}mm;
             width: 100%;
           }
           
