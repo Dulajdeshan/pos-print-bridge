@@ -1,6 +1,16 @@
 name: Build Desktop App (Windows) - Production
 
 on:
+  push:
+    branches:
+      - local
+    paths:
+      - "src/**"
+      - "index.html"
+      - "assets/**"
+      - "package.json"
+      - "electron-builder.config.js"
+      - ".github/workflows/windows.yml"
   workflow_dispatch:
     inputs:
       version:
