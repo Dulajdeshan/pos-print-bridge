@@ -7,10 +7,10 @@
     "start": "electron .",
     "build": "tsc",
     "dev": "tsc && electron .",
-    "package": "electron-builder",
-    "package:win": "electron-builder --win",
-    "package:mac": "electron-builder --mac",
-    "package:linux": "electron-builder --linux"
+    "package": "electron-builder --config electron-builder.config.js",
+    "package:win": "electron-builder --win --config electron-builder.config.js",
+    "package:mac": "electron-builder --mac --config electron-builder.config.js",
+    "package:linux": "electron-builder --linux --config electron-builder.config.js"
   },
   "keywords": [
     "pos",
