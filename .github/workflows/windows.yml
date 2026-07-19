@@ -1,23 +1,35 @@
-name: Build Windows App
+name: Build Desktop App (Windows) - Production
 
 on:
   push:
-    branches: [main]
-    tags:
-      - "v*"
-  pull_request:
-    branches: [main]
+    branches:
+      - main
+    paths:
+      - "src/**"
+      - "index.html"
+      - "assets/**"
+      - "package.json"
+      - "electron-builder.config.js"
+      - ".github/workflows/windows.yml"
   workflow_dispatch:
+    inputs:
+      version:
+        description: "Version tag (e.g. 1.2.0) — leave blank to use package.json version"
+        required: false
 
 jobs:
-  build:
+  build-windows:
     runs-on: windows-latest
+    env:
+      # secrets context isn't usable directly in `if:` conditionals — expose
+      # it as a job-level env var so the R2 upload step can check it there.
+      PROD_R2_PUBLIC_URL: ${{ secrets.PROD_R2_PUBLIC_URL }}
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "20"
@@ -26,27 +38,68 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # -----------------------------------------------------------------------
+      # Bump version (optional — only when workflow_dispatch provides a tag)
+      # -----------------------------------------------------------------------
+
+      - name: Bump version in package.json
+        if: ${{ github.event.inputs.version != '' }}
+        # --allow-same-version: npm otherwise errors ("Version not changed")
+        # when re-running with a version that's already in package.json —
+        # e.g. retrying a failed release, or the very first run at 1.0.0.
+        run: npm version ${{ github.event.inputs.version }} --no-git-tag-version --allow-same-version
+
+      # -----------------------------------------------------------------------
+      # Build TypeScript → dist/, then package the Electron app (NSIS, x64)
+      # -----------------------------------------------------------------------
+
       - name: Build TypeScript
         run: npm run build
 
-      - name: Build Electron app
-        run: npm run package:win
+      - name: Build Electron (Windows NSIS)
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Auto-update feed — baked into the packaged app's app-update.yml.
+          # Leave the PROD_R2_PUBLIC_URL secret unset to ship without auto-update.
+          R2_PUBLIC_URL: ${{ env.PROD_R2_PUBLIC_URL }}
+          # Code signing — leave these secrets empty to skip signing.
+          # WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
+          # WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
+        run: npm run package:win
 
-      - name: Upload artifacts
+      # -----------------------------------------------------------------------
+      # Upload installer as a build artifact (GitHub-side backup/debugging)
+      # -----------------------------------------------------------------------
+
+      - name: Upload Windows installer
         uses: actions/upload-artifact@v4
         with:
-          name: windows-installer
-          path: release/*.exe
+          name: POSPrinterBridge-Windows
+          path: |
+            release/*.exe
+            release/*.exe.blockmap
+            release/latest.yml
+          if-no-files-found: error
           retention-days: 30
 
-      - name: Create Release
-        if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v1
-        with:
-          files: release/*.exe
-          draft: false
-          prerelease: false
+      # -----------------------------------------------------------------------
+      # Publish to the auto-update feed (R2)
+      #
+      # Binaries are uploaded BEFORE latest.yml so running apps never see a
+      # version pointer for an installer that isn't fully available yet.
+      # -----------------------------------------------------------------------
+
+      - name: Upload release artifacts to R2
+        if: ${{ env.PROD_R2_PUBLIC_URL != '' }}
+        working-directory: release
+        shell: bash
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.PROD_R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.PROD_R2_SECRET_ACCESS_KEY }}
+          R2_ENDPOINT: https://${{ secrets.PROD_R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
+          R2_BUCKET: ${{ secrets.PROD_R2_BUCKET_NAME }}
+        run: |
+          aws s3 cp . "s3://$R2_BUCKET/pos-printer-bridge/releases/" \
+            --endpoint-url "$R2_ENDPOINT" \
+            --recursive --exclude "*" --include "*.exe" --include "*.exe.blockmap"
+          aws s3 cp latest.yml "s3://$R2_BUCKET/pos-printer-bridge/releases/latest.yml" \
+            --endpoint-url "$R2_ENDPOINT"

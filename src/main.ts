@@ -9,6 +9,7 @@ import {
 } from "electron";
 import * as path from "path";
 import { startServer } from "./server";
+import { initAutoUpdater, checkForUpdates } from "./services/updater.service";
 
 let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
@@ -66,6 +67,12 @@ function createTray() {
       },
     },
     {
+      label: "Check for Updates",
+      click: () => {
+        checkForUpdates();
+      },
+    },
+    {
       label: "Quit",
       click: () => {
         isQuitting = true;
@@ -103,6 +110,7 @@ app.whenReady().then(() => {
   createWindow();
   createTray();
   startServer();
+  initAutoUpdater();
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {

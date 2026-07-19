@@ -24,8 +24,14 @@ export class PrinterService {
         printers = await this.getLinuxPrinters();
       }
 
-      this.cachedPrinters = printers;
-      this.cacheExpiresAt = Date.now() + PRINTER_CACHE_TTL_MS;
+      // Only cache when we actually found printers — an empty result is
+      // usually a transient failure, so we don't want to serve it for the
+      // full TTL and hide printers that come back moments later.
+      if (printers.length > 0) {
+        this.cachedPrinters = printers;
+        this.cacheExpiresAt = Date.now() + PRINTER_CACHE_TTL_MS;
+      }
+
       return printers;
     } catch (error) {
       console.error("Error getting printers:", error);
@@ -34,6 +40,54 @@ export class PrinterService {
   }
 
   private async getWindowsPrinters(): Promise<Printer[]> {
+    // Default mechanism: wmic. If it returns no printers (or fails), fall
+    // back to the PowerShell Get-Printer mechanism.
+    const wmicPrinters = await this.getWindowsPrintersWmic();
+    if (wmicPrinters.length > 0) {
+      return wmicPrinters;
+    }
+
+    console.warn(
+      "wmic returned no printers, falling back to PowerShell Get-Printer"
+    );
+    return this.getWindowsPrintersPowerShell();
+  }
+
+  private async getWindowsPrintersWmic(): Promise<Printer[]> {
+    try {
+      const { stdout } = await execPromise(
+        "wmic printer get name,default /format:csv"
+      );
+
+      const lines = stdout.split("\n").filter((line: string) => line.trim());
+      const printers: Printer[] = [];
+
+      // CSV columns from wmic: Node,Default,Name
+      for (let i = 1; i < lines.length; i++) {
+        const parts = lines[i].split(",");
+        if (parts.length >= 2) {
+          const isDefault = parts[1].trim().toUpperCase() === "TRUE";
+          const name = parts[2]?.trim();
+
+          if (name) {
+            printers.push({
+              id: name,
+              name: name,
+              displayName: name,
+              isDefault: isDefault,
+            });
+          }
+        }
+      }
+
+      return printers;
+    } catch (error) {
+      console.error("Error getting Windows printers (wmic):", error);
+      return [];
+    }
+  }
+
+  private async getWindowsPrintersPowerShell(): Promise<Printer[]> {
     try {
       // PowerShell Get-Printer is ~10x faster than wmic on Windows
       const { stdout } = await execPromise(
@@ -64,7 +118,7 @@ export class PrinterService {
 
       return printers;
     } catch (error) {
-      console.error("Error getting Windows printers:", error);
+      console.error("Error getting Windows printers (PowerShell):", error);
       return [];
     }
   }
