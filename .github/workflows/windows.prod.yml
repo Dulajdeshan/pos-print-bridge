@@ -10,7 +10,7 @@ on:
       - "assets/**"
       - "package.json"
       - "electron-builder.config.js"
-      - ".github/workflows/windows.yml"
+      - ".github/workflows/windows.prod.yml"
   workflow_dispatch:
     inputs:
       version:
