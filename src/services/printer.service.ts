@@ -9,8 +9,8 @@ export class PrinterService {
   private cachedPrinters: Printer[] | null = null;
   private cacheExpiresAt = 0;
 
-  async getPrinters(): Promise<Printer[]> {
-    if (this.cachedPrinters && Date.now() < this.cacheExpiresAt) {
+  async getPrinters(forceRefresh = false): Promise<Printer[]> {
+    if (!forceRefresh && this.cachedPrinters && Date.now() < this.cacheExpiresAt) {
       return this.cachedPrinters;
     }
 
@@ -56,7 +56,8 @@ export class PrinterService {
   private async getWindowsPrintersWmic(): Promise<Printer[]> {
     try {
       const { stdout } = await execPromise(
-        "wmic printer get name,default /format:csv"
+        "wmic printer get name,default /format:csv",
+        { timeout: 8000, windowsHide: true }
       );
 
       const lines = stdout.split("\n").filter((line: string) => line.trim());
@@ -67,7 +68,9 @@ export class PrinterService {
         const parts = lines[i].split(",");
         if (parts.length >= 2) {
           const isDefault = parts[1].trim().toUpperCase() === "TRUE";
-          const name = parts[2]?.trim();
+          // Name is the last column, so re-join it — printer names may
+          // themselves contain commas.
+          const name = parts.slice(2).join(",").trim();
 
           if (name) {
             printers.push({
@@ -89,30 +92,37 @@ export class PrinterService {
 
   private async getWindowsPrintersPowerShell(): Promise<Printer[]> {
     try {
-      // PowerShell Get-Printer is ~10x faster than wmic on Windows
+      // Win32_Printer rather than Get-Printer: it is the class that actually
+      // exposes `Default`, and via CIM it is still far faster than wmic.
+      // JSON rather than CSV so printer names containing commas survive.
       const { stdout } = await execPromise(
-        `powershell -NoProfile -NonInteractive -Command "Get-Printer | Select-Object -Property Name,Default | ConvertTo-Csv -NoTypeInformation"`,
-        { timeout: 8000 }
+        `powershell -NoProfile -NonInteractive -Command "Get-CimInstance -ClassName Win32_Printer | Select-Object -Property Name,Default | ConvertTo-Json -Compress"`,
+        { timeout: 8000, windowsHide: true }
       );
 
-      const lines = stdout.split("\n").filter((line: string) => line.trim());
+      const trimmed = String(stdout).trim();
+      if (!trimmed) {
+        return [];
+      }
+
+      const parsed = JSON.parse(trimmed);
+      // A single printer comes back as an object, not an array.
+      const rows: Array<{ Name?: string; Default?: boolean }> = Array.isArray(
+        parsed
+      )
+        ? parsed
+        : [parsed];
+
       const printers: Printer[] = [];
-
-      // Skip header row
-      for (let i = 1; i < lines.length; i++) {
-        const parts = lines[i].split(",");
-        if (parts.length >= 2) {
-          const name = parts[0].trim().replace(/^"|"$/g, "");
-          const isDefault = parts[1].trim().replace(/^"|"$/g, "").toUpperCase() === "TRUE";
-
-          if (name) {
-            printers.push({
-              id: name,
-              name: name,
-              displayName: name,
-              isDefault: isDefault,
-            });
-          }
+      for (const row of rows) {
+        const name = row?.Name?.trim();
+        if (name) {
+          printers.push({
+            id: name,
+            name: name,
+            displayName: name,
+            isDefault: row.Default === true,
+          });
         }
       }
 
@@ -204,7 +214,36 @@ export class PrinterService {
   }
 
   async verifyPrinter(printerName: string): Promise<boolean> {
-    const printers = await this.getPrinters();
-    return printers.some((p) => p.name === printerName);
+    const target = printerName.trim().toLowerCase();
+    // Windows printer names are case-insensitive, so match accordingly.
+    const matches = (printers: Printer[]) =>
+      printers.some((p) => p.name.trim().toLowerCase() === target);
+
+    if (matches(await this.getPrinters())) {
+      return true;
+    }
+
+    // A miss may just mean the cached list is stale (printer added or renamed
+    // since), so re-enumerate once before believing it.
+    const fresh = await this.getPrinters(true);
+    if (matches(fresh)) {
+      return true;
+    }
+
+    if (fresh.length === 0) {
+      // Enumeration itself failed — WMI/spooler hiccups return an empty list
+      // even while the printer is perfectly healthy. Don't block the job on a
+      // failed lookup; let the actual print call decide.
+      console.warn(
+        `Printer enumeration returned no printers; proceeding with "${printerName}" anyway`
+      );
+      return true;
+    }
+
+    return false;
   }
 }
+
+// Shared instance: one cache for the whole app, so the HTTP printer list
+// and the pre-print verification never disagree.
+export const printerService = new PrinterService();

@@ -1,7 +1,7 @@
 import { BrowserWindow } from "electron";
 import { PrintDocument, PrintOptions, PaperSize } from "../types/printer.types";
 import { HtmlGeneratorService } from "./html-generator.service";
-import { PrinterService } from "./printer.service";
+import { PrinterService, printerService } from "./printer.service";
 
 const PAPER_SIZES: Record<PaperSize, number> = {
   "80mm": 80,
@@ -20,7 +20,7 @@ export class PrintService {
 
   constructor() {
     this.htmlGenerator = new HtmlGeneratorService();
-    this.printerService = new PrinterService();
+    this.printerService = printerService;
   }
 
   private getPrintWindow(): BrowserWindow {
@@ -44,11 +44,16 @@ export class PrintService {
     document: PrintDocument,
     options: PrintOptions
   ): Promise<void> {
-    // Serialise jobs so the shared window is never used concurrently
-    this.printQueue = this.printQueue.then(() =>
+    // Serialise jobs so the shared window is never used concurrently.
+    const job = this.printQueue.then(() =>
       this._printDocument(document, options)
     );
-    return this.printQueue;
+    // Swallow the rejection on the *queue* handle only. Chaining .then() off a
+    // rejected promise skips the callback and re-raises the original error, so
+    // without this a single failed job would make every later job fail with
+    // that same stale error until the app is restarted.
+    this.printQueue = job.catch(() => {});
+    return job;
   }
 
   private async _printDocument(
@@ -61,7 +66,7 @@ export class PrintService {
         console.log(`Paper size: ${options.paperSize || "80mm"}`);
         console.log(`Font scale: ${options.fontScale || 1.0}`);
 
-        // Verify printer exists (uses cached list — no extra wmic/PS call)
+        // Verify printer exists (cached list; re-enumerates only on a miss)
         const printerExists = await this.printerService.verifyPrinter(
           options.printerName
         );
@@ -78,14 +83,15 @@ export class PrintService {
 
         const paperWidth = PAPER_SIZES[options.paperSize || "80mm"];
 
-        // Use loadURL with data URI so did-finish-load fires only after full
-        // layout is complete — document.write() resolves before layout, causing
-        // the right-side clipping seen when printing immediately after.
-        printWindow.loadURL(
-          `data:text/html;charset=utf-8,${encodeURIComponent(html)}`
-        );
+        // The window is reused across jobs, so both listeners must be torn
+        // down once the job settles — otherwise every successful print leaves
+        // its did-fail-load handler attached to the shared webContents.
+        const cleanup = () => {
+          printWindow.webContents.removeListener("did-finish-load", onFinish);
+          printWindow.webContents.removeListener("did-fail-load", onFail);
+        };
 
-        printWindow.webContents.once("did-finish-load", () => {
+        const onFinish = () => {
           printWindow.webContents.print(
             {
               silent: options.silent !== false,
@@ -101,6 +107,7 @@ export class PrintService {
               },
             },
             (success, errorType) => {
+              cleanup();
               if (success) {
                 console.log("Print job sent successfully");
                 resolve();
@@ -110,11 +117,25 @@ export class PrintService {
               }
             }
           );
-        });
+        };
 
-        printWindow.webContents.once("did-fail-load", (_e, _c, desc) => {
+        const onFail = (_e: unknown, _c: unknown, desc: string) => {
+          cleanup();
           reject(new Error(`Failed to load: ${desc}`));
-        });
+        };
+
+        printWindow.webContents.on("did-finish-load", onFinish);
+        printWindow.webContents.on("did-fail-load", onFail);
+
+        // Use loadURL with data URI so did-finish-load fires only after full
+        // layout is complete — document.write() resolves before layout, causing
+        // the right-side clipping seen when printing immediately after.
+        printWindow
+          .loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`)
+          .catch((err: Error) => {
+            cleanup();
+            reject(err);
+          });
       } catch (error) {
         console.error("Error printing document:", error);
         reject(error);
