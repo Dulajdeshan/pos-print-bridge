@@ -12,6 +12,13 @@ const PAPER_SIZES: Record<PaperSize, number> = {
   "44mm": 44,
 };
 
+// CSS pixels are 1/96 inch; page sizes are in microns.
+const MICRONS_PER_CSS_PX = 25400 / 96;
+// Short receipts keep the previous A4-length page so their output is unchanged.
+const MIN_PAGE_HEIGHT_MICRONS = 297000;
+// Absorbs rounding so the last line never spills onto a second page.
+const PAGE_HEIGHT_BUFFER_MICRONS = 5000;
+
 export class PrintService {
   private htmlGenerator: HtmlGeneratorService;
   private printerService: PrinterService;
@@ -91,7 +98,25 @@ export class PrintService {
           printWindow.webContents.removeListener("did-fail-load", onFail);
         };
 
-        const onFinish = () => {
+        const onFinish = async () => {
+          // Size the page to the rendered content. A fixed height splits long
+          // receipts into multiple pages, which thermal drivers can emit out
+          // of order (the tail of the receipt printing before the header).
+          let pageHeight = MIN_PAGE_HEIGHT_MICRONS;
+          try {
+            const contentHeightPx: number =
+              await printWindow.webContents.executeJavaScript(
+                `document.fonts.ready.then(() => Math.ceil(document.documentElement.scrollHeight))`
+              );
+            pageHeight = Math.max(
+              MIN_PAGE_HEIGHT_MICRONS,
+              Math.ceil(contentHeightPx * MICRONS_PER_CSS_PX) +
+                PAGE_HEIGHT_BUFFER_MICRONS
+            );
+          } catch (err) {
+            console.warn("Could not measure content height:", err);
+          }
+
           printWindow.webContents.print(
             {
               silent: options.silent !== false,
@@ -103,7 +128,7 @@ export class PrintService {
               },
               pageSize: {
                 width: paperWidth * 1000,
-                height: 297000,
+                height: pageHeight,
               },
             },
             (success, errorType) => {
