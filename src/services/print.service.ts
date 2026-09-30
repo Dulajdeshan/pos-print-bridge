@@ -2,6 +2,9 @@ import { BrowserWindow } from "electron";
 import { PrintDocument, PrintOptions, PaperSize } from "../types/printer.types";
 import { HtmlGeneratorService } from "./html-generator.service";
 import { PrinterService, printerService } from "./printer.service";
+import { renderHtmlToBitmap } from "./raster.service";
+import { encodeRasterJob } from "./escpos";
+import { sendRawToPrinter } from "./raw-printer.service";
 
 const PAPER_SIZES: Record<PaperSize, number> = {
   "80mm": 80,
@@ -18,6 +21,13 @@ const MICRONS_PER_CSS_PX = 25400 / 96;
 const MIN_PAGE_HEIGHT_MICRONS = 297000;
 // Absorbs rounding so the last line never spills onto a second page.
 const PAGE_HEIGHT_BUFFER_MICRONS = 5000;
+
+// Print-head width at 203 dpi: 72mm printable on 76-80mm rolls, 48mm on 57-58mm.
+function defaultDotsPerLine(paperWidthMm: number): number {
+  if (paperWidthMm >= 76) return 576;
+  if (paperWidthMm >= 57) return 384;
+  return 288;
+}
 
 export class PrintService {
   private htmlGenerator: HtmlGeneratorService;
@@ -73,22 +83,47 @@ export class PrintService {
         console.log(`Paper size: ${options.paperSize || "80mm"}`);
         console.log(`Font scale: ${options.fontScale || 1.0}`);
 
-        // Verify printer exists (cached list; re-enumerates only on a miss)
-        const printerExists = await this.printerService.verifyPrinter(
-          options.printerName
-        );
-        if (!printerExists) {
-          throw new Error(
-            `Printer "${options.printerName}" not found in system`
-          );
-        }
+        // Raster mode sends the receipt as one ESC/POS image, bypassing the
+        // driver's fixed paper sizes that clip or blank long receipts. A
+        // dialog print (silent: false) needs the driver path.
+        const rasterMode =
+          options.printMode !== "driver" && options.silent !== false;
 
-        const printWindow = this.getPrintWindow();
+        // Verify printer exists (cached list; re-enumerates only on a miss).
+        // Raster mode skips this: opening the printer by name already fails
+        // for an unknown printer, and enumeration can take seconds.
+        if (!rasterMode) {
+          const printerExists = await this.printerService.verifyPrinter(
+            options.printerName
+          );
+          if (!printerExists) {
+            throw new Error(
+              `Printer "${options.printerName}" not found in system`
+            );
+          }
+        }
 
         // Generate HTML
         const html = this.htmlGenerator.generateDocumentHTML(document, options);
 
         const paperWidth = PAPER_SIZES[options.paperSize || "80mm"];
+
+        if (rasterMode) {
+          const bitmap = await renderHtmlToBitmap(html, {
+            contentWidthMm: paperWidth,
+            dotsWidth: options.dotsPerLine || defaultDotsPerLine(paperWidth),
+            dither: options.dither,
+          });
+          await sendRawToPrinter(
+            options.printerName,
+            encodeRasterJob(bitmap, { copies: options.copies })
+          );
+          console.log("Print job sent successfully");
+          resolve();
+          return;
+        }
+
+        const printWindow = this.getPrintWindow();
 
         // The window is reused across jobs, so both listeners must be torn
         // down once the job settles — otherwise every successful print leaves

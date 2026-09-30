@@ -20,7 +20,14 @@ export interface PrintOptions {
   silent?: boolean;
   marginLeft?: number; // Left margin in mm (default: 0)
   marginRight?: number; // Right margin in mm (default: 0)
+  // "raster" sends the receipt as one ESC/POS image, so length is unlimited.
+  // "driver" prints through the Windows driver and its paper size (default: "raster")
+  printMode?: PrintMode;
+  dotsPerLine?: number; // Printer dots per line in raster mode (default: 576 for 76-80mm, 384 for 57-58mm)
+  dither?: boolean; // Dither images in raster mode instead of thresholding (default: false)
 }
+
+export type PrintMode = "raster" | "driver";
 
 export interface TextBlock {
   type: "text";

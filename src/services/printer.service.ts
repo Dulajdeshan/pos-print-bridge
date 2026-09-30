@@ -4,16 +4,32 @@ const execPromise = util.promisify(exec);
 import { Printer } from "../types/printer.types";
 
 const PRINTER_CACHE_TTL_MS = 30_000;
+// The spooler can stall enumeration for several seconds while it is busy
+// feeding a job to a USB printer, so give it generous headroom.
+const WINDOWS_ENUM_TIMEOUT_MS = 15_000;
 
 export class PrinterService {
   private cachedPrinters: Printer[] | null = null;
   private cacheExpiresAt = 0;
+  private inFlight: Promise<Printer[]> | null = null;
 
   async getPrinters(forceRefresh = false): Promise<Printer[]> {
     if (!forceRefresh && this.cachedPrinters && Date.now() < this.cacheExpiresAt) {
       return this.cachedPrinters;
     }
 
+    // Share one enumeration between concurrent callers (HTTP list + pre-print
+    // verification) instead of spawning several wmic/PowerShell processes
+    // against an already busy spooler.
+    if (!this.inFlight) {
+      this.inFlight = this.refreshPrinters().finally(() => {
+        this.inFlight = null;
+      });
+    }
+    return this.inFlight;
+  }
+
+  private async refreshPrinters(): Promise<Printer[]> {
     try {
       let printers: Printer[];
       if (process.platform === "win32") {
@@ -30,6 +46,14 @@ export class PrinterService {
       if (printers.length > 0) {
         this.cachedPrinters = printers;
         this.cacheExpiresAt = Date.now() + PRINTER_CACHE_TTL_MS;
+        return printers;
+      }
+
+      // Enumeration came back empty (typically a spooler timeout). Serve the
+      // last known-good list rather than making every printer vanish.
+      if (this.cachedPrinters) {
+        console.warn("Printer enumeration failed; serving last known printer list");
+        return this.cachedPrinters;
       }
 
       return printers;
@@ -57,7 +81,7 @@ export class PrinterService {
     try {
       const { stdout } = await execPromise(
         "wmic printer get name,default /format:csv",
-        { timeout: 8000, windowsHide: true }
+        { timeout: WINDOWS_ENUM_TIMEOUT_MS, windowsHide: true }
       );
 
       const lines = stdout.split("\n").filter((line: string) => line.trim());
@@ -97,7 +121,7 @@ export class PrinterService {
       // JSON rather than CSV so printer names containing commas survive.
       const { stdout } = await execPromise(
         `powershell -NoProfile -NonInteractive -Command "Get-CimInstance -ClassName Win32_Printer | Select-Object -Property Name,Default | ConvertTo-Json -Compress"`,
-        { timeout: 8000, windowsHide: true }
+        { timeout: WINDOWS_ENUM_TIMEOUT_MS, windowsHide: true }
       );
 
       const trimmed = String(stdout).trim();
