@@ -25,7 +25,13 @@ export interface PrintOptions {
   printMode?: PrintMode;
   dotsPerLine?: number; // Printer dots per line in raster mode (default: 576 for 76-80mm, 384 for 57-58mm)
   dither?: boolean; // Dither images in raster mode instead of thresholding (default: false)
+  openCashDrawer?: boolean; // Kick the cash drawer connected to the printer after printing (default: true)
+  // Which wire of the printer's RJ11/RJ12 drawer socket fires the drawer — an
+  // electrical connector pin, not a PIN code. Only set 5 if a drawer doesn't open on 2 (default: 2)
+  cashDrawerPin?: CashDrawerPin;
 }
+
+export type CashDrawerPin = 2 | 5;
 
 export type PrintMode = "raster" | "driver";
 

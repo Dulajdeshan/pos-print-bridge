@@ -3,7 +3,7 @@ import { PrintDocument, PrintOptions, PaperSize } from "../types/printer.types";
 import { HtmlGeneratorService } from "./html-generator.service";
 import { PrinterService, printerService } from "./printer.service";
 import { renderHtmlToBitmap } from "./raster.service";
-import { encodeRasterJob } from "./escpos";
+import { cashDrawerKick, encodeRasterJob } from "./escpos";
 import { sendRawToPrinter } from "./raw-printer.service";
 
 const PAPER_SIZES: Record<PaperSize, number> = {
@@ -88,6 +88,8 @@ export class PrintService {
         // dialog print (silent: false) needs the driver path.
         const rasterMode =
           options.printMode !== "driver" && options.silent !== false;
+        // On unless the POS opts out, e.g. for reprints or non-cash sales.
+        const openCashDrawer = options.openCashDrawer !== false;
 
         // Verify printer exists (cached list; re-enumerates only on a miss).
         // Raster mode skips this: opening the printer by name already fails
@@ -116,7 +118,11 @@ export class PrintService {
           });
           await sendRawToPrinter(
             options.printerName,
-            encodeRasterJob(bitmap, { copies: options.copies })
+            encodeRasterJob(bitmap, {
+              copies: options.copies,
+              openCashDrawer,
+              cashDrawerPin: options.cashDrawerPin,
+            })
           );
           console.log("Print job sent successfully");
           resolve();
@@ -166,10 +172,19 @@ export class PrintService {
                 height: pageHeight,
               },
             },
-            (success, errorType) => {
+            async (success, errorType) => {
               cleanup();
               if (success) {
                 console.log("Print job sent successfully");
+                if (openCashDrawer) {
+                  // The receipt already printed, so a drawer failure must
+                  // not report the job as failed (the POS would reprint).
+                  await sendRawToPrinter(
+                    options.printerName,
+                    cashDrawerKick(options.cashDrawerPin),
+                    "Open Cash Drawer"
+                  ).catch((err) => console.error("Cash drawer kick failed:", err));
+                }
                 resolve();
               } else {
                 console.error("Print failed:", errorType);

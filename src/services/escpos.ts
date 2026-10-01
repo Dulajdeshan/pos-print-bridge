@@ -1,4 +1,5 @@
 import { MonoBitmap } from "./raster.service";
+import { CashDrawerPin } from "../types/printer.types";
 
 const ESC = 0x1b;
 const GS = 0x1d;
@@ -10,6 +11,17 @@ const BAND_ROWS = 256;
 export interface EscPosJobOptions {
   copies?: number;
   cut?: boolean; // Feed to the cutter and partial-cut after each copy (default: true)
+  openCashDrawer?: boolean; // Kick the drawer once, after the last copy
+  cashDrawerPin?: CashDrawerPin;
+}
+
+/**
+ * ESC p m t1 t2 — pulse the drawer kick-out connector. RAW jobs bypass the
+ * driver, so its "open drawer after printing" setting never applies to them.
+ * Pulse: 25 × 2ms on, 250 × 2ms off, the values drivers commonly use.
+ */
+export function cashDrawerKick(pin: CashDrawerPin = 2): Buffer {
+  return Buffer.from([ESC, 0x70, pin === 5 ? 0x01 : 0x00, 25, 250]);
 }
 
 /**
@@ -47,6 +59,10 @@ export function encodeRasterJob(
       // GS V 66 0 — feed the last line past the cutter, then partial cut.
       parts.push(Buffer.from([GS, 0x56, 0x42, 0x00]));
     }
+  }
+
+  if (options.openCashDrawer) {
+    parts.push(cashDrawerKick(options.cashDrawerPin));
   }
 
   return Buffer.concat(parts);

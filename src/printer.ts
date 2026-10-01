@@ -33,6 +33,7 @@ export async function printReceipt(
 ): Promise<void> {
   const document = documentConverter.convertReceiptToDocument(receiptData);
   const printOptions: PrintOptions = {
+    ...options,
     printerName: printerId,
     paperSize: options?.paperSize || "80mm",
     fontSize: options?.fontSize || 12,
