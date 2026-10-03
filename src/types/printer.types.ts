@@ -29,7 +29,12 @@ export interface PrintOptions {
   // Which wire of the printer's RJ11/RJ12 drawer socket fires the drawer — an
   // electrical connector pin, not a PIN code. Only set 5 if a drawer doesn't open on 2 (default: 2)
   cashDrawerPin?: CashDrawerPin;
+  design?: ReceiptDesign; // Spacing preset; "compact" tightens line height and gaps (default: "default")
 }
+
+export type ReceiptDesign = "default" | "compact";
+
+export type LineStyle = "solid" | "dashed" | "dotted";
 
 export type CashDrawerPin = 2 | 5;
 
@@ -64,6 +69,9 @@ export interface TableBlock {
     columnBolds?: boolean[]; // Bold per column
     fullWidthRowAlign?: TextAlign; // Alignment for full-width rows (default: left)
     fullWidthRowBold?: boolean; // Bold for full-width rows (default: false)
+    // Line between row groups. A full-width row starts a new group; without
+    // full-width rows every row is its own group (default: none)
+    rowSeparator?: LineStyle;
   };
 }
 
@@ -72,7 +80,7 @@ export interface DividerBlock {
   style?: {
     marginTop?: number;
     marginBottom?: number;
-    lineStyle?: "solid" | "dashed" | "dotted";
+    lineStyle?: LineStyle;
   };
 }
 

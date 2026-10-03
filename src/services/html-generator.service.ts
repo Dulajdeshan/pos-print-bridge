@@ -9,6 +9,7 @@ import {
   BarcodeBlock,
   PrintOptions,
   PaperSize,
+  ReceiptDesign,
 } from "../types/printer.types";
 import JsBarcode from "jsbarcode";
 import { createCanvas } from "canvas";
@@ -23,6 +24,35 @@ const PAPER_SIZES: Record<PaperSize, number> = {
   "44mm": 44,
 };
 
+interface DesignPreset {
+  lineHeight: number;
+  pagePaddingMm: number; // Top and bottom page padding
+  cellPaddingY: number; // Vertical padding of table cells in px
+  dividerMarginTop: number; // Divider margins when the block sets none
+  dividerMarginBottom: number;
+  rowSeparatorGap: number; // Space above and below a table row separator in px
+}
+
+// "default" holds the original spacing so existing receipts render unchanged.
+const DESIGN_PRESETS: Record<ReceiptDesign, DesignPreset> = {
+  default: {
+    lineHeight: 1.4,
+    pagePaddingMm: 3,
+    cellPaddingY: 2,
+    dividerMarginTop: 5,
+    dividerMarginBottom: 0,
+    rowSeparatorGap: 3,
+  },
+  compact: {
+    lineHeight: 1.15,
+    pagePaddingMm: 1.5,
+    cellPaddingY: 0,
+    dividerMarginTop: 3,
+    dividerMarginBottom: 3,
+    rowSeparatorGap: 2,
+  },
+};
+
 export class HtmlGeneratorService {
   generateDocumentHTML(document: PrintDocument, options: PrintOptions): string {
     const paperWidth = PAPER_SIZES[options.paperSize || "80mm"];
@@ -31,10 +61,11 @@ export class HtmlGeneratorService {
     const baseFontSize = options.fontSize || 12;
     const fontScale = options.fontScale || 1.0;
     const actualBaseFontSize = Math.round(baseFontSize * fontScale);
+    const design = DESIGN_PRESETS[options.design || "default"] || DESIGN_PRESETS.default;
 
     let bodyContent = "";
     document.blocks.forEach((block) => {
-      bodyContent += this.renderBlock(block, paperWidth, actualBaseFontSize);
+      bodyContent += this.renderBlock(block, paperWidth, actualBaseFontSize, design);
     });
 
     return `
@@ -60,9 +91,9 @@ export class HtmlGeneratorService {
             width: ${paperWidth}mm;
             font-family: 'Roboto Mono', 'Courier New', Courier, monospace;
             font-size: ${actualBaseFontSize}px;
-            line-height: 1.4;
-            padding-top: 3mm;
-            padding-bottom: 3mm;
+            line-height: ${design.lineHeight};
+            padding-top: ${design.pagePaddingMm}mm;
+            padding-bottom: ${design.pagePaddingMm}mm;
             padding-left: ${marginLeft}mm;
             padding-right: ${marginRight}mm;
           }
@@ -100,9 +131,13 @@ export class HtmlGeneratorService {
           }
           
           table td {
-            padding: 2px 2px;
+            padding: ${design.cellPaddingY}px 2px;
             vertical-align: top;
             word-wrap: break-word;
+          }
+
+          table td.row-separator {
+            padding: 0;
           }
           
           img {
@@ -123,15 +158,16 @@ export class HtmlGeneratorService {
   private renderBlock(
     block: PrintBlock,
     paperWidth: number,
-    baseFontSize: number
+    baseFontSize: number,
+    design: DesignPreset
   ): string {
     switch (block.type) {
       case "text":
         return this.renderTextBlock(block, baseFontSize);
       case "table":
-        return this.renderTableBlock(block, baseFontSize);
+        return this.renderTableBlock(block, baseFontSize, design);
       case "divider":
-        return this.renderDividerBlock(block);
+        return this.renderDividerBlock(block, design);
       case "spacer":
         return this.renderSpacerBlock(block);
       case "image":
@@ -163,7 +199,11 @@ export class HtmlGeneratorService {
     )}</div>\n`;
   }
 
-  private renderTableBlock(block: TableBlock, baseFontSize: number): string {
+  private renderTableBlock(
+    block: TableBlock,
+    baseFontSize: number,
+    design: DesignPreset
+  ): string {
     const style = block.style || {};
     const fontSize = style.fontSize
       ? Math.round(style.fontSize * (style.fontScale || 1.0))
@@ -218,8 +258,20 @@ export class HtmlGeneratorService {
       html += "</tr></thead>\n";
     }
 
+    // A full-width row (e.g. a product name) starts a new group; without any,
+    // each row is its own group.
+    const groupedByFullWidthRows = block.rows.some(
+      (row) => typeof row === "string"
+    );
+    const separatorStyle = `margin: ${design.rowSeparatorGap}px 0;`;
+
     html += "<tbody>\n";
-    block.rows.forEach((row) => {
+    block.rows.forEach((row, rowIndex) => {
+      const startsGroup = !groupedByFullWidthRows || typeof row === "string";
+      if (style.rowSeparator && rowIndex > 0 && startsGroup) {
+        html += `<tr><td colspan="${maxCols}" class="row-separator"><div class="divider divider-${style.rowSeparator}" style="${separatorStyle}"></div></td></tr>\n`;
+      }
+
       html += "<tr>\n";
 
       // Check if this is a full-width row (single string) or a normal row (array)
@@ -250,10 +302,10 @@ export class HtmlGeneratorService {
     return html;
   }
 
-  private renderDividerBlock(block: DividerBlock): string {
+  private renderDividerBlock(block: DividerBlock, design: DesignPreset): string {
     const style = block.style || {};
-    const marginTop = style.marginTop || 5;
-    const marginBottom = style.marginBottom || 0;
+    const marginTop = style.marginTop ?? design.dividerMarginTop;
+    const marginBottom = style.marginBottom ?? design.dividerMarginBottom;
     const lineStyle = style.lineStyle || "dashed";
 
     const inlineStyle = `margin-top: ${marginTop}px; margin-bottom: ${marginBottom}px;`;

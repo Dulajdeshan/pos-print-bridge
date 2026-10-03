@@ -227,6 +227,19 @@ previewWindow.document.write(html);
 }
 ```
 
+**Receipt Design:**
+
+Set `options.design` to choose a spacing preset:
+
+- `"default"`: the original spacing (used when `design` is omitted)
+- `"compact"`: tighter line height, table rows, dividers and page padding, so the receipt is shorter
+
+Margins set on a block (`marginTop` / `marginBottom`) still override the preset.
+
+```json
+"options": { "printerName": "POS-80C", "paperSize": "80mm", "design": "compact" }
+```
+
 **Available Block Types:**
 
 1. **Text Block**
@@ -287,6 +300,7 @@ previewWindow.document.write(html);
 - `headerBold`: Make header row bold (default: `true`)
 - `fullWidthRowBold`: Make full-width rows bold (default: `false`)
 - `fullWidthRowAlign`: Alignment for full-width rows (default: `"left"`)
+- `rowSeparator`: Line drawn between row groups: `"solid"`, `"dashed"` or `"dotted"` (default: none). A full-width row starts a new group, so each product name and its numbers row stay together. In a table without full-width rows, the line goes between every row. No line is drawn after the last group.
 
 **Full-Width Rows in Tables:**
 
@@ -305,7 +319,8 @@ Tables now support full-width rows for lengthy content like product names. Simpl
   "style": {
     "columnAligns": ["center", "right", "right"],
     "fullWidthRowAlign": "left",
-    "fullWidthRowBold": true
+    "fullWidthRowBold": true,
+    "rowSeparator": "dashed"
   }
 }
 ```
@@ -315,6 +330,7 @@ In this example:
 - String rows (`"Product Name Test 1"`) span across all columns with full width
 - Array rows (`["1", "160.00", "160.00"]`) display as normal table cells
 - `fullWidthRowAlign` controls the alignment of full-width rows (default: "left")
+- `rowSeparator` draws a dashed line between the two products
 - Line breaks (`\n`) are supported in all text, including table cells and full-width rows
 
 3. **Divider Block**
