@@ -298,6 +298,7 @@ Margins set on a block (`marginTop` / `marginBottom`) still override the preset.
     - Other: Equal distribution
 - `columnBolds`: Array of boolean values to make specific columns bold
 - `headerBold`: Make header row bold (default: `true`)
+- `headerSeparator`: Line drawn below the header row: `"solid"`, `"dashed"` or `"dotted"` (default: none). Only applies when `headers` is set.
 - `fullWidthRowBold`: Make full-width rows bold (default: `false`)
 - `fullWidthRowAlign`: Alignment for full-width rows (default: `"left"`)
 - `rowSeparator`: Line drawn between row groups: `"solid"`, `"dashed"` or `"dotted"` (default: none). A full-width row starts a new group, so each product name and its numbers row stay together. In a table without full-width rows, the line goes between every row. No line is drawn after the last group.
@@ -320,6 +321,7 @@ Tables now support full-width rows for lengthy content like product names. Simpl
     "columnAligns": ["center", "right", "right"],
     "fullWidthRowAlign": "left",
     "fullWidthRowBold": true,
+    "headerSeparator": "solid",
     "rowSeparator": "dashed"
   }
 }
@@ -330,6 +332,7 @@ In this example:
 - String rows (`"Product Name Test 1"`) span across all columns with full width
 - Array rows (`["1", "160.00", "160.00"]`) display as normal table cells
 - `fullWidthRowAlign` controls the alignment of full-width rows (default: "left")
+- `headerSeparator` draws a solid line below the header row
 - `rowSeparator` draws a dashed line between the two products
 - Line breaks (`\n`) are supported in all text, including table cells and full-width rows
 
