@@ -10,6 +10,7 @@ import {
   PrintOptions,
   PaperSize,
   ReceiptDesign,
+  LineStyle,
 } from "../types/printer.types";
 import JsBarcode from "jsbarcode";
 import { createCanvas } from "canvas";
@@ -245,6 +246,10 @@ export class HtmlGeneratorService {
       }
     };
 
+    const separatorStyle = `margin: ${design.rowSeparatorGap}px 0;`;
+    const separatorRow = (lineStyle: LineStyle) =>
+      `<tr><td colspan="${maxCols}" class="row-separator"><div class="divider divider-${lineStyle}" style="${separatorStyle}"></div></td></tr>\n`;
+
     if (block.headers && block.headers.length > 0) {
       const headerAlign = style.headerAlign || "left";
       const headerColWidths = getColWidths(block.headers.length);
@@ -255,7 +260,11 @@ export class HtmlGeneratorService {
           headerColWidths[index]
         }; white-space: nowrap;">${this.escapeHtml(header)}</td>\n`;
       });
-      html += "</tr></thead>\n";
+      html += "</tr>\n";
+      if (style.headerSeparator) {
+        html += separatorRow(style.headerSeparator);
+      }
+      html += "</thead>\n";
     }
 
     // A full-width row (e.g. a product name) starts a new group; without any,
@@ -263,13 +272,12 @@ export class HtmlGeneratorService {
     const groupedByFullWidthRows = block.rows.some(
       (row) => typeof row === "string"
     );
-    const separatorStyle = `margin: ${design.rowSeparatorGap}px 0;`;
 
     html += "<tbody>\n";
     block.rows.forEach((row, rowIndex) => {
       const startsGroup = !groupedByFullWidthRows || typeof row === "string";
       if (style.rowSeparator && rowIndex > 0 && startsGroup) {
-        html += `<tr><td colspan="${maxCols}" class="row-separator"><div class="divider divider-${style.rowSeparator}" style="${separatorStyle}"></div></td></tr>\n`;
+        html += separatorRow(style.rowSeparator);
       }
 
       html += "<tr>\n";

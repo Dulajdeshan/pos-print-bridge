@@ -62,6 +62,7 @@ export interface TableBlock {
     columnAligns?: TextAlign[]; // Alignment per column
     columnWidths?: string[]; // Width per column as percentage (e.g., ["40%", "20%", "20%", "20%"])
     headerBold?: boolean;
+    headerSeparator?: LineStyle; // Line between the header row and the first row (default: none)
     fontSize?: number;
     fontScale?: number;
     marginTop?: number;
