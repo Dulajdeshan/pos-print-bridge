@@ -11,10 +11,11 @@ import {
   PaperSize,
   ReceiptDesign,
   LineStyle,
+  FontFamily,
 } from "../types/printer.types";
 import JsBarcode from "jsbarcode";
 import { createCanvas } from "canvas";
-import { getFontFaceCSS } from "./fonts";
+import { containsSinhala, getFontFaceCSS, getFontStack, resolveFont } from "./fonts";
 
 const PAPER_SIZES: Record<PaperSize, number> = {
   "80mm": 80,
@@ -64,8 +65,13 @@ export class HtmlGeneratorService {
     const actualBaseFontSize = Math.round(baseFontSize * fontScale);
     const design = DESIGN_PRESETS[options.design || "default"] || DESIGN_PRESETS.default;
 
+    const bodyFont = resolveFont(options.fontFamily);
+    const usedFonts = new Set<FontFamily>([bodyFont]);
+
     let bodyContent = "";
     document.blocks.forEach((block) => {
+      const blockFont = this.getBlockFont(block);
+      if (blockFont) usedFonts.add(blockFont);
       bodyContent += this.renderBlock(block, paperWidth, actualBaseFontSize, design);
     });
 
@@ -75,7 +81,7 @@ export class HtmlGeneratorService {
       <head>
         <meta charset="UTF-8">
         <style>
-          ${getFontFaceCSS()}
+          ${getFontFaceCSS(usedFonts, containsSinhala(bodyContent))}
 
           @page {
             size: ${paperWidth}mm auto;
@@ -90,7 +96,7 @@ export class HtmlGeneratorService {
 
           body {
             width: ${paperWidth}mm;
-            font-family: 'Roboto Mono', 'Courier New', Courier, monospace;
+            font-family: ${getFontStack(bodyFont)};
             font-size: ${actualBaseFontSize}px;
             line-height: ${design.lineHeight};
             padding-top: ${design.pagePaddingMm}mm;
@@ -156,6 +162,20 @@ export class HtmlGeneratorService {
     `;
   }
 
+  /** The font a block asks for, if it overrides the document font. */
+  private getBlockFont(block: PrintBlock): FontFamily | undefined {
+    if (block.type === "barcode") return resolveFont(block.style?.fontFamily);
+    if (block.type === "text" || block.type === "table") {
+      const key = block.style?.fontFamily;
+      return key ? resolveFont(key) : undefined;
+    }
+    return undefined;
+  }
+
+  private fontFamilyCSS(key: string | undefined): string {
+    return key ? ` font-family: ${getFontStack(resolveFont(key))};` : "";
+  }
+
   private renderBlock(
     block: PrintBlock,
     paperWidth: number,
@@ -193,7 +213,9 @@ export class HtmlGeneratorService {
     const marginTop = style.marginTop || 0;
     const marginBottom = style.marginBottom || 0;
 
-    const inlineStyle = `font-size: ${fontSize}px; margin-top: ${marginTop}px; margin-bottom: ${marginBottom}px;`;
+    const inlineStyle = `font-size: ${fontSize}px; margin-top: ${marginTop}px; margin-bottom: ${marginBottom}px;${this.fontFamilyCSS(
+      style.fontFamily
+    )}`;
 
     return `<div class="text-${align} ${bold}" style="${inlineStyle}">${this.escapeHtml(
       block.value
@@ -216,7 +238,9 @@ export class HtmlGeneratorService {
     const marginBottom = style.marginBottom || 0;
     const headerBold = style.headerBold !== false ? "bold" : "";
 
-    const tableStyle = `font-size: ${fontSize}px; margin-top: ${marginTop}px; margin-bottom: ${marginBottom}px;`;
+    const tableStyle = `font-size: ${fontSize}px; margin-top: ${marginTop}px; margin-bottom: ${marginBottom}px;${this.fontFamilyCSS(
+      style.fontFamily
+    )}`;
 
     let html = `<table style="${tableStyle}">\n`;
 
@@ -380,7 +404,9 @@ export class HtmlGeneratorService {
 
       // Add custom text below barcode if displayValue is true
       if (displayValue) {
-        html += `  <div style="font-size: ${fontSize}px; margin-top: 2px; margin-bottom: ${marginBottom}px; font-family: 'Roboto Mono', 'Courier New', monospace;">${this.escapeHtml(
+        html += `  <div style="font-size: ${fontSize}px; margin-top: 2px; margin-bottom: ${marginBottom}px; font-family: ${getFontStack(
+          resolveFont(style.fontFamily)
+        )};">${this.escapeHtml(
           block.value
         )}</div>\n`;
       } else {

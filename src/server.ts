@@ -1,6 +1,7 @@
 import express, { Request, Response } from "express";
 import { getPrinters, printReceipt, printDocument, generateDocumentPreview } from "./printer";
 import { PrintOptions, PrintDocument } from "./types/printer.types";
+import { DEFAULT_FONT, listFonts } from "./services/fonts";
 
 const app = express();
 const PORT = 9000;
@@ -37,6 +38,11 @@ app.get("/api/printers", async (req: Request, res: Response) => {
       error: error instanceof Error ? error.message : "Unknown error",
     });
   }
+});
+
+// Fonts the POS can offer for options.fontFamily / block style.fontFamily
+app.get("/api/fonts", (req: Request, res: Response) => {
+  res.json({ success: true, default: DEFAULT_FONT, fonts: listFonts() });
 });
 
 // Print receipt (legacy format)

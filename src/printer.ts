@@ -56,6 +56,8 @@ export function generateDocumentPreview(
     paperSize: options?.paperSize || "80mm",
     fontSize: options?.fontSize || 12,
     fontScale: options?.fontScale || 1.0,
+    fontFamily: options?.fontFamily,
+    design: options?.design,
     copies: 1,
     silent: true,
     marginLeft: options?.marginLeft,

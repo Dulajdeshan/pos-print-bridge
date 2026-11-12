@@ -11,11 +11,41 @@ export type TextAlign = "left" | "center" | "right";
 
 export type FontWeight = "normal" | "bold";
 
+// Bundled with the bridge: "roboto-mono" (default) through "gemunu-libre".
+// The rest ship with Windows 10/11 and are used by name.
+export type FontFamily =
+  | "roboto-mono"
+  | "courier-prime"
+  | "ibm-plex-mono"
+  | "jetbrains-mono"
+  | "source-code-pro"
+  | "inconsolata"
+  | "inter"
+  | "roboto-condensed"
+  | "noto-sans-sinhala"
+  | "noto-serif-sinhala"
+  | "abhaya-libre"
+  | "yaldevi"
+  | "gemunu-libre"
+  | "consolas"
+  | "courier-new"
+  | "lucida-console"
+  | "arial"
+  | "calibri"
+  | "segoe-ui"
+  | "tahoma"
+  | "verdana"
+  | "trebuchet-ms"
+  | "times-new-roman"
+  | "georgia"
+  | "nirmala-ui";
+
 export interface PrintOptions {
   printerName: string;
   paperSize?: PaperSize;
   fontSize?: number; // Base font size in pixels (default: 12)
   fontScale?: number; // Scale multiplier (e.g., 1.2 = 120%, default: 1.0)
+  fontFamily?: FontFamily; // Font for the whole receipt (default: "roboto-mono")
   copies?: number;
   silent?: boolean;
   marginLeft?: number; // Left margin in mm (default: 0)
@@ -48,6 +78,7 @@ export interface TextBlock {
     bold?: boolean;
     fontSize?: number; // Specific font size for this block (overrides base)
     fontScale?: number; // Scale multiplier for this block
+    fontFamily?: FontFamily; // Font for this block (overrides options.fontFamily)
     marginTop?: number;
     marginBottom?: number;
   };
@@ -65,6 +96,7 @@ export interface TableBlock {
     headerSeparator?: LineStyle; // Line between the header row and the first row (default: none)
     fontSize?: number;
     fontScale?: number;
+    fontFamily?: FontFamily; // Font for this table (overrides options.fontFamily)
     marginTop?: number;
     marginBottom?: number;
     columnBolds?: boolean[]; // Bold per column
@@ -122,6 +154,7 @@ export interface BarcodeBlock {
     height?: number; // Height in pixels (default: 50)
     displayValue?: boolean; // Show the value below barcode (default: true)
     fontSize?: number; // Font size for the value text (default: 12)
+    fontFamily?: FontFamily; // Font for the value text (default: "roboto-mono")
     marginTop?: number;
     marginBottom?: number;
   };

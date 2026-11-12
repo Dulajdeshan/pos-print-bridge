@@ -10,7 +10,7 @@ An Electron-based bridge application that enables cloud POS systems to communica
   - Advanced document format (full control with blocks)
 - 📏 **Multiple paper sizes:** 80mm, 78mm, 76mm, 58mm, 57mm, 44mm
 - 🔤 **Font scaling:** Adjustable font sizes (e.g., 120% = fontScale: 1.2)
-- ✍️ **Professional typography:** Roboto Mono font with regular (400) and bold (700) weights
+- ✍️ **Selectable fonts:** bundled Roboto Mono (default) and five Sinhala fonts, plus common Windows fonts
 - 🎨 **Rich formatting:**
   - Text blocks with alignment, bold, custom sizing
   - Tables with column alignment and full-width rows for lengthy content
@@ -238,6 +238,48 @@ Margins set on a block (`marginTop` / `marginBottom`) still override the preset.
 
 ```json
 "options": { "printerName": "POS-80C", "paperSize": "80mm", "design": "compact" }
+```
+
+**Fonts:**
+
+Set `options.fontFamily` to a font key for the whole receipt. Text, table and barcode blocks can override it with `style.fontFamily`. An unknown key falls back to `"roboto-mono"`. `GET /api/fonts` returns this list for POS settings screens.
+
+| Key | Font | Source | Notes |
+| --- | --- | --- | --- |
+| `roboto-mono` | Roboto Mono | Bundled | Default, monospace |
+| `courier-prime` | Courier Prime | Bundled | Monospace, classic receipt look |
+| `ibm-plex-mono` | IBM Plex Mono | Bundled | Monospace, clear 0/O and 1/l |
+| `jetbrains-mono` | JetBrains Mono | Bundled | Monospace, tall letters, very legible |
+| `source-code-pro` | Source Code Pro | Bundled | Monospace, light and clean |
+| `inconsolata` | Inconsolata | Bundled | Monospace, narrow (fits more on 58mm) |
+| `inter` | Inter | Bundled | Sans-serif, modern |
+| `roboto-condensed` | Roboto Condensed | Bundled | Sans-serif, narrow (long item names) |
+| `noto-sans-sinhala` | Noto Sans Sinhala | Bundled | Sinhala, sans-serif |
+| `noto-serif-sinhala` | Noto Serif Sinhala | Bundled | Sinhala, serif |
+| `abhaya-libre` | Abhaya Libre | Bundled | Sinhala, serif |
+| `yaldevi` | Yaldevi | Bundled | Sinhala, rounded |
+| `gemunu-libre` | Gemunu Libre | Bundled | Sinhala, narrow |
+| `consolas` | Consolas | Windows | Monospace |
+| `courier-new` | Courier New | Windows | Monospace |
+| `lucida-console` | Lucida Console | Windows | Monospace |
+| `arial` | Arial | Windows | |
+| `calibri` | Calibri | Windows | |
+| `segoe-ui` | Segoe UI | Windows | |
+| `tahoma` | Tahoma | Windows | |
+| `verdana` | Verdana | Windows | |
+| `trebuchet-ms` | Trebuchet MS | Windows | |
+| `times-new-roman` | Times New Roman | Windows | |
+| `georgia` | Georgia | Windows | |
+| `nirmala-ui` | Nirmala UI | Windows | Sinhala |
+
+Bundled fonts look the same on every machine. Windows fonts come with Windows 10/11; on macOS or Linux a missing one falls back to Roboto Mono. Sinhala text in a font without Sinhala characters is drawn in Noto Sans Sinhala automatically. All bundled fonts other than Roboto Mono are under the SIL Open Font License (see `assets/fonts/licenses`).
+
+```json
+"options": { "printerName": "POS-80C", "fontFamily": "arial" }
+```
+
+```json
+{ "type": "text", "value": "ස්තූතියි!", "style": { "align": "center", "fontFamily": "noto-sans-sinhala" } }
 ```
 
 **Available Block Types:**
